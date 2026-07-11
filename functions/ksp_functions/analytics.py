@@ -91,6 +91,15 @@ class AnalyticsEngine:
                     for n in current_neighbors:
                         neighbors.update(G.neighbors(n))
                 subgraph = G.subgraph(neighbors)
+        else:
+            # OPTIMIZATION: On default load, filter out isolated cases (single accused, no shared attributes)
+            # and only return connected components with size > 2. This keeps rendering counts under ~120 nodes.
+            interest_nodes = []
+            for comp in nx.connected_components(G):
+                if len(comp) > 2:
+                    interest_nodes.extend(comp)
+            if interest_nodes:
+                subgraph = G.subgraph(interest_nodes)
 
         # Community/Cluster Detection
         # Since we use standard networkx, we can find connected components as basic communities (gang structures)

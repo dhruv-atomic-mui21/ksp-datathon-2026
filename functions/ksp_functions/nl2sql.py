@@ -226,11 +226,39 @@ class NL2SQLEngine:
     def generate_explanation(self, query, results, is_kannada=False):
         """
         Asks Gemini to explain the output rows based on the user query and SQL.
+        If offline (no API key), programmatically compiles a clean, detailed summary.
         """
         if not self.has_llm:
-            explanation = f"Returned {len(results)} rows using ZCQL: '{query}'."
+            if not results:
+                explanation = "No matching records were found in the crime database for your query."
+                if is_kannada:
+                    return "ನಿಮ್ಮ ಪ್ರಶ್ನೆಗೆ ಅಪರಾಧ ಡೇಟಾಬೇಸ್‌ನಲ್ಲಿ ಯಾವುದೇ ಹೊಂದಾಣಿಕೆಯ ದಾಖಲೆಗಳು ಕಂಡುಬಂದಿಲ್ಲ."
+                return explanation
+                
+            first = results[0]
+            if isinstance(results, list) and len(results) > 0:
+                # CaseMaster format
+                if "CrimeNo" in first:
+                    explanation = f"Found {len(results)} matching cases. The most recent case is Crime No. {first.get('CrimeNo')} registered on {first.get('CrimeRegisteredDate') or 'N/A'}. Brief facts: {first.get('BriefFacts', 'No facts text available')}."
+                # Accused format
+                elif "AccusedName" in first:
+                    explanation = f"Retrieved {len(results)} accused records. Detail: {first.get('AccusedName')}, Age: {first.get('Age') or 'N/A'}, Gender: {first.get('Gender') or 'N/A'}, Address: {first.get('PresentAddress') or 'N/A'}."
+                # AuditLog format
+                elif "UserRole" in first:
+                    explanation = f"Retrieved {len(results)} audit log entries. Most recent log: User: {first.get('UserEmail')}, Role: {first.get('UserRole')}, Action: {first.get('Action')}."
+                # Generic output format
+                else:
+                    keys = list(first.keys())[:3]
+                    vals = [f"{k}: {first[k]}" for k in keys]
+                    explanation = f"Retrieved {len(results)} records. Sample row: {', '.join(vals)}."
+            else:
+                explanation = f"Retrieved {len(results)} records matching your query."
+
             if is_kannada:
-                return "ZCQL ಬಳಸಿಕೊಂಡು " + str(len(results)) + " ಸಾಲುಗಳನ್ನು ಮರುಪಡೆಯಲಾಗಿದೆ: '" + query + "'."
+                # Basic Kannada translation assistant
+                if "Found" in explanation:
+                    return f"ಹೊಂದಾಣಿಕೆಯಾಗುವ {len(results)} ಪ್ರಕರಣಗಳು ಕಂಡುಬಂದಿವೆ. ಇತ್ತೀಚಿನ ಪ್ರಕರಣ: ಪ್ರ.ಕ್ರ.ಸಂಖ್ಯೆ: {first.get('CrimeNo')}."
+                return "ಡೇಟಾಬೇಸ್‌ನಿಂದ ಯಶಸ್ವಿಯಾಗಿ " + str(len(results)) + " ದಾಖಲೆಗಳನ್ನು ಮರುಪಡೆಯಲಾಗಿದೆ."
             return explanation
 
         try:
