@@ -1,9 +1,21 @@
 // KSP Client-Side Controller (Challenge 01 Chatbot & Challenge 02 Dashboard)
 
-// 1. Dynamic API Base URL resolver for Zoho Catalyst environments
-const API_BASE = window.location.origin.includes("localhost:3000") || window.location.origin.includes("zoho")
-    ? "/server/ksp_backend"
-    : "http://localhost:3000/server/ksp_backend";
+// 1. Dynamic API Base URL resolver for Zoho Catalyst environments (local and production)
+let API_BASE = "/server/ksp_backend"; // Default relative path
+
+const hostname = window.location.hostname;
+if (hostname === "localhost" || hostname === "127.0.0.1") {
+    API_BASE = "http://localhost:3000/server/ksp_backend";
+} else {
+    // If running on Zoho Slate (e.g. ksp-datathon-2026-wvdwrtuw.onslate.in)
+    // We parse the prefix and TLD (in/com) to construct the production function URL
+    const slateMatch = hostname.match(/^([a-z0-9-]+)\.onslate\.(in|com)$/i);
+    if (slateMatch) {
+        const projectPrefix = slateMatch[1];
+        const tld = slateMatch[2];
+        API_BASE = `https://${projectPrefix}.catalystserverless.${tld}/server/ksp_backend`;
+    }
+}
 
 console.log("Resolved API Base URL:", API_BASE);
 
