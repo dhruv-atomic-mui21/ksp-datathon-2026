@@ -1,13 +1,12 @@
 {
   "functions": {
-    "source": "functions",
     "targets": [
       "ksp_functions"
     ],
-    "ignore": []
+    "ignore": [],
+    "source": "functions"
   },
   "client": {
-    "source": "client",
-    "ignore": []
+    "source": "client"
   }
 }

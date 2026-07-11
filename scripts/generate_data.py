@@ -384,10 +384,17 @@ def run_data_generator():
         # April (4) and May (5) have +35% body & property crimes. If random selection falls outside, adjust date
         if major_head_id in [1, 2] and crime_date.month not in [4, 5] and random.random() < 0.25:
             # Shift date to April or May of the same year
-            crime_date = crime_date.replace(month=random.choice([4, 5]))
+            try:
+                crime_date = crime_date.replace(month=random.choice([4, 5]))
+            except ValueError:
+                # April only has 30 days. Scale day to 30.
+                crime_date = crime_date.replace(day=30, month=random.choice([4, 5]))
         # Theft/Property crimes spike in December (12)
         if sub_head_id in [7, 8] and crime_date.month != 12 and random.random() < 0.20:
-            crime_date = crime_date.replace(month=12)
+            try:
+                crime_date = crime_date.replace(month=12)
+            except ValueError:
+                crime_date = crime_date.replace(day=30, month=12)
             
         year = crime_date.year
         

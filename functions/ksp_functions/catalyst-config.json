@@ -4,7 +4,9 @@
     "type": "advancedio",
     "stack": "python_3_12",
     "memory": 256,
-    "env_variables": {}
+    "env_variables": {
+      "GEMINI_API_KEY": "[ENCRYPTION_KEY]"
+    }
   },
   "execution": {
     "main": "main.py"
