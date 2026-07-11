@@ -1,7 +1,12 @@
 {
-  "name": "ksp_backend",
-  "type": "advanced",
-  "stack": "python",
-  "version": "3.12",
-  "main": "main.py"
+  "deployment": {
+    "name": "ksp_backend",
+    "type": "advancedio",
+    "stack": "python3.12",
+    "memory": 256,
+    "env_variables": {}
+  },
+  "execution": {
+    "main": "main.py"
+  }
 }
