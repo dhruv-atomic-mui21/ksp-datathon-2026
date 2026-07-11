@@ -2,7 +2,7 @@
   "deployment": {
     "name": "ksp_functions",
     "type": "advancedio",
-    "stack": "python3.12",
+    "stack": "python_3_12",
     "memory": 256,
     "env_variables": {}
   },
