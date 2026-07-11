@@ -1,10 +1,13 @@
 {
   "functions": {
+    "source": "functions",
     "targets": [
-      "ksp_backend"
+      {
+        "name": "ksp_backend",
+        "type": "advanced"
+      }
     ],
-    "ignore": [],
-    "source": "functions"
+    "ignore": []
   },
   "client": {
     "source": "client",
