@@ -1,0 +1,6 @@
+{
+  "name": "ksp_backend",
+  "type": "advanced",
+  "stack": "python",
+  "version": "3.12"
+}

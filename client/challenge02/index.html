@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KSP AI-Driven Crime Analytics & Link-Analysis Platform</title>
+    <link rel="stylesheet" href="../css/style.css">
+    
+    <!-- Leaflet Map CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Vis.js Network JS -->
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    
+    <style>
+        .dashboard-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 24px 30px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        
+        /* Tab Controls */
+        .tab-nav {
+            display: flex;
+            gap: 12px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 24px;
+            padding-bottom: 8px;
+        }
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-family: var(--font-header);
+            font-size: 1.05rem;
+            font-weight: 600;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+        .tab-btn:hover, .tab-btn.active {
+            color: var(--text-primary);
+            background: rgba(255,255,255,0.05);
+        }
+        .tab-btn.active {
+            border-bottom: 2px solid var(--accent-blue);
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .tab-content {
+            display: none;
+            flex: 1;
+            min-height: 500px;
+        }
+        .tab-content.active {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Map panel */
+        .map-view-wrapper {
+            display: flex;
+            gap: 24px;
+            height: 600px;
+        }
+        #map {
+            flex: 1;
+            height: 100%;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            z-index: 10;
+        }
+        
+        /* Network panel */
+        .network-view-wrapper {
+            display: flex;
+            gap: 24px;
+            height: 600px;
+        }
+        #networkContainer {
+            flex: 1;
+            height: 100%;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            background: #090d19;
+        }
+        
+        /* Sidebars */
+        .control-sidebar {
+            width: 320px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        /* Table generic styling */
+        .analytics-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            margin-top: 12px;
+        }
+        .analytics-table th, .analytics-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .analytics-table th {
+            background: rgba(255,255,255,0.05);
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+        .analytics-table td {
+            color: var(--text-secondary);
+        }
+        
+        /* Cards & Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+        
+        /* Risk Badges */
+        .badge-risk {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .badge-high { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); border: 1px solid rgba(239, 68, 68, 0.3); }
+        .badge-medium { background: rgba(245, 158, 11, 0.15); color: var(--accent-gold); border: 1px solid rgba(245, 158, 11, 0.3); }
+        .badge-low { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); border: 1px solid rgba(16, 185, 129, 0.3); }
+        
+        /* Modal for SHAP Explainability */
+        .shap-modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .shap-modal-content {
+            background: #0f1524;
+            border: 1px solid var(--border-color);
+            width: 500px;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 0 30px var(--accent-glow);
+        }
+        
+        /* Attribution bar chart simulated in CSS */
+        .contrib-bar-wrapper {
+            margin: 16px 0;
+        }
+        .contrib-bar-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            margin-bottom: 6px;
+        }
+        .contrib-bar-track {
+            height: 12px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .contrib-bar-fill {
+            height: 100%;
+            background: var(--accent-blue);
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- KSP Header -->
+    <header class="ksp-header">
+        <div class="ksp-brand">
+            <div class="ksp-logo">KSP</div>
+            <div class="ksp-title">Karnataka State Police</div>
+        </div>
+        <div class="ksp-nav-links">
+            <a href="../index.html" class="ksp-nav-link">Home Portal</a>
+            <a href="../challenge01/index.html" class="ksp-nav-link">Challenge 01</a>
+            <a href="index.html" class="ksp-nav-link active">Challenge 02</a>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="main-container">
+        
+        <div class="dashboard-container">
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h1 class="text-gradient" style="font-size: 2.2rem; font-weight: 800;">Analytics & Visualization Dashboard</h1>
+                <div class="user-badge">
+                    <span>Access Role:</span>
+                    <strong><span id="activeUserRoleDisplay">Investigator</span></strong>
+                </div>
+            </div>
+            
+            <!-- Tab Navigation -->
+            <div class="tab-nav">
+                <button class="tab-btn active" onclick="switchDashboardTab('geoTab', this)">Crime Hotspots (DBSCAN)</button>
+                <button class="tab-btn" onclick="switchDashboardTab('networkTab', this)">Criminal Links (NetworkX)</button>
+                <button class="tab-btn" onclick="switchDashboardTab('predictiveTab', this)">Risk & Anomalies (ML Models)</button>
+                <button class="tab-btn" onclick="switchDashboardTab('sociologyTab', this)">Sociological Insights</button>
+                <button class="tab-btn" onclick="switchDashboardTab('auditTab', this)">Compliance Audit Logs</button>
+            </div>
+
+            <!-- Tab 1: Geospatial Hotspots -->
+            <div id="geoTab" class="tab-content active">
+                <div class="map-view-wrapper">
+                    <div id="map"></div>
+                    <div class="control-sidebar">
+                        <div class="glass-panel" style="padding: 20px;">
+                            <h3 style="margin-bottom: 12px; font-family: var(--font-header);">Filter Settings</h3>
+                            <div style="display: flex; flex-direction: column; gap: 12px;">
+                                <div>
+                                    <label style="font-size: 0.8rem; color: var(--text-secondary);">Select District</label>
+                                    <select id="geoDistrictSelect" onchange="loadGeospatialData()">
+                                        <option value="">All Districts</option>
+                                        <option value="Bengaluru City">Bengaluru City</option>
+                                        <option value="Mysuru">Mysuru</option>
+                                        <option value="Belagavi">Belagavi</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.8rem; color: var(--text-secondary);">Select Category</label>
+                                    <select id="geoCategorySelect" onchange="loadGeospatialData()">
+                                        <option value="">All Categories</option>
+                                        <option value="Crimes Against Property">Crimes Against Property</option>
+                                        <option value="Crimes Against Body">Crimes Against Body</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="glass-panel" style="padding: 20px; flex: 1; overflow-y: auto;">
+                            <h3 style="margin-bottom: 10px; font-family: var(--font-header); color: var(--accent-red);">Spike Alerts</h3>
+                            <div id="spikeAlertsContainer" style="display: flex; flex-direction: column; gap: 12px;">
+                                <div style="color: var(--text-secondary); font-size: 0.85rem;">No active spike alerts.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 2: Network Link Analysis -->
+            <div id="networkTab" class="tab-content">
+                <div class="network-view-wrapper">
+                    <div id="networkContainer"></div>
+                    <div class="control-sidebar">
+                        <div class="glass-panel" style="padding: 20px;">
+                            <h3 style="margin-bottom: 12px; font-family: var(--font-header);">Graph Search</h3>
+                            <div style="display: flex; flex-direction: column; gap: 12px;">
+                                <div>
+                                    <label style="font-size: 0.8rem; color: var(--text-secondary);">Search Accused Name</label>
+                                    <input type="text" id="networkAccusedInput" placeholder="e.g. Ramesh" onkeydown="if(event.key === 'Enter') loadNetworkData()">
+                                </div>
+                                <div style="display: flex; gap: 8px;">
+                                    <button class="btn-primary" style="flex: 1;" onclick="loadNetworkData()">Search</button>
+                                    <button class="btn-primary" style="background: rgba(255,255,255,0.05); color: var(--text-primary); border: 1px solid var(--border-color);" onclick="resetNetworkFilters()">Reset</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="glass-panel" style="padding: 20px; flex: 1; overflow-y: auto;">
+                            <h3 style="margin-bottom: 12px; font-family: var(--font-header);">Suspected Organized Rings</h3>
+                            <div id="gangsListContainer" style="display: flex; flex-direction: column; gap: 10px; font-size: 0.85rem;">
+                                <!-- Gang info -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 3: Risk Model & Anomalies -->
+            <div id="predictiveTab" class="tab-content">
+                <div class="metrics-grid" id="predictiveRiskGrid">
+                    <!-- Cards will be populated dynamically -->
+                </div>
+                
+                <div class="glass-panel" style="padding: 24px; margin-top: 10px;">
+                    <h3 style="font-family: var(--font-header); color: var(--accent-gold); margin-bottom: 12px;">Flagged Anomalous Case Incidents (Isolation Forest)</h3>
+                    <div style="overflow-x: auto;">
+                        <table class="analytics-table">
+                            <thead>
+                                <tr>
+                                    <th>Crime No</th>
+                                    <th>District</th>
+                                    <th>Category</th>
+                                    <th>Flagged Cause</th>
+                                    <th>Anomaly Score</th>
+                                    <th>Incident Fact Excerpt</th>
+                                </tr>
+                            </thead>
+                            <tbody id="anomaliesTableBody">
+                                <!-- Anomalies will go here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 4: Sociological Insights -->
+            <div id="sociologyTab" class="tab-content">
+                <div style="display: flex; gap: 24px;">
+                    <div class="glass-panel" style="padding: 24px; flex: 1;">
+                        <h3 style="font-family: var(--font-header); margin-bottom: 16px;">Age Demographics (Property Crime Offenders)</h3>
+                        <div style="display: flex; flex-direction: column; gap: 12px;" id="socioAgeContainer">
+                            <!-- Bins -->
+                        </div>
+                    </div>
+                    
+                    <div class="glass-panel" style="padding: 24px; flex: 1.5;">
+                        <h3 style="font-family: var(--font-header); margin-bottom: 16px;">Complainant Occupation & Offence Cross-tabulations</h3>
+                        <div style="overflow-y: auto; max-height: 400px;">
+                            <table class="analytics-table">
+                                <thead>
+                                    <tr>
+                                        <th>Complainant Occupation</th>
+                                        <th>Offence Type</th>
+                                        <th>Registered Count</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="socioOccTableBody">
+                                    <!-- Correlations -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-top: 20px; font-size: 0.8rem; color: var(--text-secondary); text-align: center;">
+                    * All charts and correlation tables show descriptive metrics calculated against synthetic calibration weights.
+                </div>
+            </div>
+
+            <!-- Tab 5: Audit Compliance logs -->
+            <div id="auditTab" class="tab-content">
+                <div id="auditAccessDenied" class="glass-panel text-center" style="padding: 50px; display: none;">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent-red)" stroke-width="2" style="margin-bottom: 16px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    <h3 style="color: var(--accent-red); font-family: var(--font-header); font-size: 1.5rem; margin-bottom: 8px;">Access Denied</h3>
+                    <p style="color: var(--text-secondary); max-width: 500px; margin: 0 auto;">
+                        RBAC security policy restriction. You are logged in as a <strong>Investigator/Analyst</strong>. Viewing security audit logs requires <strong>Supervisor</strong> or <strong>Policymaker</strong> access credentials.
+                    </p>
+                </div>
+                
+                <div id="auditLogsPanel" class="glass-panel" style="padding: 24px; display: none;">
+                    <h3 style="font-family: var(--font-header); margin-bottom: 16px; color: var(--accent-blue);">System Security Audit Compliance Log</h3>
+                    <div style="overflow-x: auto;">
+                        <table class="analytics-table">
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>User Email</th>
+                                    <th>User Role</th>
+                                    <th>Action Logged</th>
+                                    <th>Query Executed</th>
+                                </tr>
+                            </thead>
+                            <tbody id="auditTableBody">
+                                <!-- Logs will go here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- SHAP Attribution Modal -->
+    <div id="shapModal" class="shap-modal" onclick="if(event.target === this) closeShapModal()">
+        <div class="shap-modal-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 id="shapModalTitle" style="font-family: var(--font-header); font-size: 1.3rem;">Bengaluru City</h3>
+                <button onclick="closeShapModal()" style="background:transparent; border:none; color:var(--text-secondary); font-size: 1.5rem; cursor:pointer;">&times;</button>
+            </div>
+            
+            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 20px;">
+                Mathematical feature-level contributions to the risk score (simulated SHAP values).
+            </div>
+            
+            <div id="shapBarsContainer">
+                <!-- CSS bar contributions will go here -->
+            </div>
+            
+            <button class="btn-primary mt-4" style="width: 100%;" onclick="closeShapModal()">Close Details</button>
+        </div>
+    </div>
+
+    <script src="../js/app.js"></script>
+    <script>
+        // Set user role info from localStorage
+        const activeRole = localStorage.getItem("ksp_user_role") || "investigator";
+        document.getElementById("activeUserRoleDisplay").innerText = activeRole.toUpperCase();
+        
+        // Load initial analytics data on load
+        window.onload = function() {
+            loadGeospatialData();
+            loadNetworkData();
+            loadPredictiveData();
+            loadSociologicalData();
+            loadAuditData();
+        }
+    </script>
+</body>
+</html>

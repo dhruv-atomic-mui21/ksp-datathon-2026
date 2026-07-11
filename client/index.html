@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KSP Crime Database Platform — Portal</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .portal-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        .portal-header {
+            margin-bottom: 40px;
+        }
+        .portal-header h1 {
+            font-family: var(--font-header);
+            font-size: 2.8rem;
+            font-weight: 800;
+            margin-bottom: 12px;
+        }
+        .role-selector-panel {
+            background: rgba(59, 130, 246, 0.05);
+            border: 1px solid rgba(59, 130, 246, 0.15);
+            padding: 16px 24px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            width: 100%;
+            max-width: 800px;
+        }
+        .role-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            text-align: left;
+        }
+        .role-info span {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .role-info strong {
+            font-size: 1.05rem;
+            color: var(--accent-blue);
+        }
+        .role-select {
+            max-width: 250px;
+            font-weight: 600;
+            border-color: rgba(59, 130, 246, 0.3);
+            color: var(--text-primary);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- KSP System Header -->
+    <header class="ksp-header">
+        <div class="ksp-brand">
+            <div class="ksp-logo">KSP</div>
+            <div class="ksp-title">Karnataka State Police</div>
+        </div>
+        <div class="ksp-nav-links">
+            <a href="index.html" class="ksp-nav-link active">Home Portal</a>
+            <a href="challenge01/index.html" class="ksp-nav-link">Challenge 01</a>
+            <a href="challenge02/index.html" class="ksp-nav-link">Challenge 02</a>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="main-container">
+        <div class="portal-hero">
+            <div class="portal-container">
+                
+                <div class="portal-header">
+                    <h1 class="text-gradient">KSP Crime Platform</h1>
+                    <p style="color: var(--text-secondary); font-size: 1.1rem; max-width: 650px; margin: 0 auto;">
+                        A unified serverless system built on Zoho Catalyst. Resolving Challenge 01 and Challenge 02 for police intelligence, network link analysis, and crime analytics.
+                    </p>
+                </div>
+
+                <!-- Interactive Role Selector to Mock RBAC -->
+                <center>
+                    <div class="role-selector-panel glass-panel">
+                        <div class="role-info">
+                            <span>Role-Based Access Control (RBAC) Simulator</span>
+                            <strong>Active Simulation Profile</strong>
+                        </div>
+                        <select id="userRoleSelect" class="role-select" onchange="updateSessionRole()">
+                            <option value="investigator">Investigator (Audit log access blocked)</option>
+                            <option value="analyst">Crime Analyst (Normal operational access)</option>
+                            <option value="supervisor">Supervisor (Can view full Audit Logs)</option>
+                            <option value="policymaker">Policymaker (Can view full Audit Logs)</option>
+                        </select>
+                    </div>
+                </center>
+
+                <!-- Cards Grid -->
+                <div class="portal-grid">
+                    
+                    <!-- Challenge 01 Card -->
+                    <div class="portal-card glass-panel" onclick="window.location.href='challenge01/index.html'">
+                        <div>
+                            <span style="font-size: 0.75rem; text-transform: uppercase; color: var(--accent-blue); font-weight: 700; letter-spacing: 1px;">Challenge 01</span>
+                            <h2 style="margin-top: 8px;">Conversational AI Agent</h2>
+                            <p style="margin-top: 10px;">
+                                An intelligent investigation chatbot utilizing a schema-grounded NL2SQL conversational engine. Includes translation-assisted Kannada support, voice interaction, query explainability drawers, and PDF report downloads.
+                            </p>
+                        </div>
+                        <a href="challenge01/index.html" class="portal-btn">
+                            Launch Chat Agent
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                    </div>
+
+                    <!-- Challenge 02 Card -->
+                    <div class="portal-card glass-panel" onclick="window.location.href='challenge02/index.html'">
+                        <div>
+                            <span style="font-size: 0.75rem; text-transform: uppercase; color: var(--accent-gold); font-weight: 700; letter-spacing: 1px;">Challenge 02</span>
+                            <h2 class="text-gold-gradient" style="margin-top: 8px;">Crime Analytics Dashboard</h2>
+                            <p style="margin-top: 10px;">
+                                A geospatial & link-analysis analytical platform. Features Leaflet crime density maps, DBSCAN hotspots, NetworkX-driven criminal rings, IsolationForest anomaly detection, and SHAP explainable risk scores.
+                            </p>
+                        </div>
+                        <a href="challenge02/index.html" class="portal-btn" style="background: var(--accent-gold);">
+                            Open Dashboard
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Store selected role in localStorage to pass in all AJAX headers
+        function updateSessionRole() {
+            const roleSelect = document.getElementById("userRoleSelect");
+            const role = roleSelect.value;
+            const emails = {
+                investigator: "io.patil@ksp.gov.in",
+                analyst: "analyst.gowda@ksp.gov.in",
+                supervisor: "sp.murthy@ksp.gov.in",
+                policymaker: "dg.siddappa@ksp.gov.in"
+            };
+            localStorage.setItem("ksp_user_role", role);
+            localStorage.setItem("ksp_user_email", emails[role]);
+        }
+
+        // Initialize on load
+        window.onload = function() {
+            let savedRole = localStorage.getItem("ksp_user_role");
+            if (!savedRole) {
+                savedRole = "investigator";
+            }
+            document.getElementById("userRoleSelect").value = savedRole;
+            updateSessionRole();
+        }
+    </script>
+</body>
+</html>

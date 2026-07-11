@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KSP Intelligent Conversational AI</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .chat-sidebar {
+            width: 280px;
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            justify-content: space-between;
+        }
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: radial-gradient(circle at 50% 50%, #0d1326 0%, #060913 100%);
+            position: relative;
+        }
+        .chat-messages {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .message-bubble {
+            max-width: 75%;
+            padding: 16px 20px;
+            border-radius: 12px;
+            line-height: 1.5;
+            font-size: 0.95rem;
+            position: relative;
+            animation: fadeIn 0.3s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .message-user {
+            background: var(--accent-blue);
+            color: var(--text-primary);
+            align-self: flex-end;
+            border-bottom-right-radius: 2px;
+        }
+        .message-assistant {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            align-self: flex-start;
+            border-bottom-left-radius: 2px;
+        }
+        .message-meta {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 8px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .btn-explain {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--accent-blue);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            padding: 2px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: var(--transition-smooth);
+        }
+        .btn-explain:hover {
+            background: var(--accent-blue);
+            color: var(--text-primary);
+        }
+        
+        /* Chat Input Panel */
+        .chat-input-panel {
+            padding: 20px 30px;
+            background: rgba(15, 21, 36, 0.9);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .input-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .chat-input {
+            flex: 1;
+            padding: 14px 18px;
+            font-size: 0.95rem;
+        }
+        .btn-mic {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: var(--accent-red);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+        .btn-mic.recording {
+            background: var(--accent-red);
+            color: var(--text-primary);
+            box-shadow: 0 0 12px var(--accent-red);
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+            100% { transform: scale(1); }
+        }
+        
+        /* Explainability Drawer */
+        .explain-drawer {
+            position: fixed;
+            top: 70px;
+            right: -550px;
+            bottom: 0;
+            width: 500px;
+            background: #0f1524;
+            border-left: 1px solid var(--border-color);
+            box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+            z-index: 99;
+            transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            padding: 30px;
+        }
+        .explain-drawer.open {
+            right: 0;
+        }
+        .drawer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        .drawer-header h3 {
+            font-family: var(--font-header);
+            font-size: 1.4rem;
+        }
+        .btn-close-drawer {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        .sql-box {
+            background: #070a13;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.85rem;
+            color: #34d399;
+            border: 1px solid rgba(52, 211, 153, 0.15);
+            overflow-x: auto;
+            margin-bottom: 20px;
+            white-space: pre-wrap;
+        }
+        .table-container {
+            flex: 1;
+            overflow: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+            text-align: left;
+        }
+        .data-table th, .data-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .data-table th {
+            background: rgba(255,255,255,0.05);
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+        .data-table td {
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- KSP Header -->
+    <header class="ksp-header">
+        <div class="ksp-brand">
+            <div class="ksp-logo">KSP</div>
+            <div class="ksp-title">Karnataka State Police</div>
+        </div>
+        <div class="ksp-nav-links">
+            <a href="../index.html" class="ksp-nav-link">Home Portal</a>
+            <a href="index.html" class="ksp-nav-link active">Challenge 01</a>
+            <a href="../challenge02/index.html" class="ksp-nav-link">Challenge 02</a>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="main-container">
+        
+        <!-- Sidebar -->
+        <div class="chat-sidebar">
+            <div>
+                <h2 class="text-gradient mb-2" style="font-size: 1.5rem; font-weight: 700;">Investigation AI</h2>
+                <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; margin-bottom: 24px;">
+                    Conversational agent to query the KSP database. Ask questions about crime statistics, case numbers, or accused details.
+                </p>
+                
+                <div class="glass-panel" style="padding: 16px; margin-bottom: 20px;">
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Active Simulator Role</div>
+                    <div id="sidebarRole" style="font-weight: 700; color: var(--accent-blue); font-size: 1.1rem; margin-top: 4px;">Investigator</div>
+                    <div id="sidebarEmail" style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px;">io.patil@ksp.gov.in</div>
+                </div>
+
+                <div class="glass-panel" style="padding: 16px;">
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Translation Layer Status</div>
+                    <div style="font-weight: 700; color: var(--accent-green); font-size: 0.95rem; margin-top: 4px; display: flex; align-items: center; gap: 6px;">
+                        <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--accent-green);"></span>
+                        Active (English / ಕನ್ನಡ)
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <button class="btn-primary" style="background: rgba(239, 68, 68, 0.1); color: var(--accent-red); border: 1px solid rgba(239, 68, 68, 0.2);" onclick="clearConversation()">
+                    Clear Chat History
+                </button>
+                <button class="btn-primary" onclick="exportConversationPDF()">
+                    Export PDF Log
+                </button>
+            </div>
+        </div>
+
+        <!-- Chat Area -->
+        <div class="chat-area">
+            
+            <div class="chat-messages" id="chatMessages">
+                <!-- Welcome Message -->
+                <div class="message-bubble message-assistant">
+                    Hello! I am your intelligent conversational assistant for the KSP Crime Database. 
+                    <br><br>
+                    You can ask me questions in English or <strong>കന്നഡ (Kannada)</strong>:
+                    <ul style="margin-left: 20px; margin-top: 8px; line-height: 1.6;">
+                        <li>"Show me the criminal history of Ramesh Gowda"</li>
+                        <li>"ಬೆಂಗಳೂರಿನಲ್ಲಿ ನಡೆದ ಕೊಲೆ ಪ್ರಕರಣಗಳನ್ನು ಪಟ್ಟಿ ಮಾಡಿ" (List murder cases in Bengaluru)</li>
+                        <li>"How many Heinous crimes occurred in Mysuru in 2025?"</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Input Panel -->
+            <div class="chat-input-panel">
+                <div class="input-row">
+                    <input type="text" id="chatInput" class="chat-input" placeholder="Type your query here..." onkeydown="if(event.key === 'Enter') sendQuery()">
+                    
+                    <button id="micBtn" class="btn-mic" onclick="toggleSpeech()" title="Speech to Text">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                    </button>
+                    
+                    <button class="btn-primary" onclick="sendQuery()">Send</button>
+                </div>
+                
+                <div style="display: flex; gap: 20px; align-items: center; font-size: 0.85rem; color: var(--text-secondary);">
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                        <input type="checkbox" id="ttsToggle" checked> Speak Response (Voice Output)
+                    </label>
+                    
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span>Language:</span>
+                        <select id="langSelect" style="padding: 4px 8px; width: 120px;">
+                            <option value="en-US">English</option>
+                            <option value="kn-IN">ಕನ್ನಡ (Kannada)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Explainability Drawer -->
+        <div id="explainDrawer" class="explain-drawer">
+            <div class="drawer-header">
+                <h3>Query Transparency Details</h3>
+                <button class="btn-close-drawer" onclick="closeDrawer()">&times;</button>
+            </div>
+            
+            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 600;">Executed ZCQL / SQL Query:</div>
+            <div id="drawerSql" class="sql-box">SELECT * FROM CaseMaster...</div>
+            
+            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 10px; font-weight: 600;">Database Rows Returned (ZCQL Data Store):</div>
+            <div class="table-container">
+                <table class="data-table" id="drawerTable">
+                    <thead>
+                        <tr id="drawerTableHead">
+                            <th>Column</th>
+                        </tr>
+                    </thead>
+                    <tbody id="drawerTableBody">
+                        <tr>
+                            <td>No records returned</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <script src="../js/app.js"></script>
+    <script>
+        // Set profile values from localStorage
+        document.getElementById("sidebarRole").innerText = localStorage.getItem("ksp_user_role") || "Investigator";
+        document.getElementById("sidebarEmail").innerText = localStorage.getItem("ksp_user_email") || "io.patil@ksp.gov.in";
+    </script>
+</body>
+</html>
