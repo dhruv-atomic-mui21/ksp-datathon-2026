@@ -2,10 +2,7 @@
   "functions": {
     "source": "functions",
     "targets": [
-      {
-        "name": "ksp_backend",
-        "type": "advanced"
-      }
+      "ksp_backend"
     ],
     "ignore": []
   },
