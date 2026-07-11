@@ -1,8 +1,8 @@
 {
   "deployment": {
-    "name": "ksp_backend",
+    "name": "ksp_functions",
     "type": "advancedio",
-    "stack": "python3.9",
+    "stack": "python3.12",
     "memory": 256,
     "env_variables": {}
   },

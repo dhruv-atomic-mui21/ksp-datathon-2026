@@ -2,8 +2,8 @@ import sys
 import os
 import json
 
-# Ensure functions/ksp_backend is in python path
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "functions", "ksp_backend"))
+# Ensure functions/ksp_functions is in python path
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "functions", "ksp_functions"))
 
 from main import handler
 from flask import Flask

@@ -42,7 +42,7 @@ By utilizing a shared Python Advanced I/O backend and a dual-mode database adapt
 │   ├── js/app.js               # Client API router, maps, and network controls
 │   └── index.html              # Main portal landing page and RBAC selector
 ├── functions/
-│   └── ksp_backend/            # Shared Catalyst Advanced I/O Python Function
+│   └── ksp_functions/           # Shared Catalyst Advanced I/O Python Function
 │       ├── main.py             # HTTP routing controller and CORS middleware
 │       ├── database.py         # DB manager (SQLite & ZCQL flattening logic)
 │       ├── nl2sql.py           # Gemini prompting and translation pipelines
@@ -69,7 +69,7 @@ npm install -g zcatalyst-cli
 
 ### 2. Install Python Dependencies
 ```bash
-pip install -r functions/ksp_backend/requirements.txt
+pip install -r functions/ksp_functions/requirements.txt
 ```
 
 ### 3. Generate SQLite Local Database

@@ -2,7 +2,7 @@
   "functions": {
     "source": "functions",
     "targets": [
-      "ksp_backend"
+      "ksp_functions"
     ],
     "ignore": []
   },
