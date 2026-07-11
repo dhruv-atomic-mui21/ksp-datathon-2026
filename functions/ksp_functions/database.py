@@ -34,14 +34,14 @@ class DatabaseManager:
         # but standard SQL is 100% compatible.
         # We will open and close connection to avoid threading errors in serverless env.
         try:
-            # Look for db in root or local directory
-            db_file = self.sqlite_path
+            # Prioritize current directory inside function folder first
+            db_file = os.path.join(os.path.dirname(__file__), self.sqlite_path)
             if not os.path.exists(db_file):
-                # Check one directory up (in case running from functions/ksp_backend/)
-                db_file = os.path.join("..", "..", self.sqlite_path)
+                # Fallback to local path
+                db_file = self.sqlite_path
                 if not os.path.exists(db_file):
-                    # Check current directory inside function
-                    db_file = os.path.join(os.path.dirname(__file__), self.sqlite_path)
+                    # Check one directory up
+                    db_file = os.path.join("..", "..", self.sqlite_path)
 
             conn = sqlite3.connect(db_file)
             conn.row_factory = sqlite3.Row
@@ -58,11 +58,11 @@ class DatabaseManager:
     def _execute_sqlite_write(self, sql, params=None):
         params = params or []
         try:
-            db_file = self.sqlite_path
+            db_file = os.path.join(os.path.dirname(__file__), self.sqlite_path)
             if not os.path.exists(db_file):
-                db_file = os.path.join("..", "..", self.sqlite_path)
+                db_file = self.sqlite_path
                 if not os.path.exists(db_file):
-                    db_file = os.path.join(os.path.dirname(__file__), self.sqlite_path)
+                    db_file = os.path.join("..", "..", self.sqlite_path)
             conn = sqlite3.connect(db_file)
             cursor = conn.cursor()
             cursor.execute(sql, params)
