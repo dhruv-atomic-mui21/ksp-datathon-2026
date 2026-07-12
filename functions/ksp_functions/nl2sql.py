@@ -182,13 +182,16 @@ class NL2SQLEngine:
             english_query = self.translate_kannada_to_english(natural_query)
             logger.info(f"Translated Kannada query: '{natural_query}' -> '{english_query}'")
 
-        # 2. Build history context
+        # 2. Build history context (injecting previous executed SQL strings so the LLM remembers its actions)
         history_context = ""
         if history:
             history_context = "\nConversation context:\n"
             for turn in history[-4:]:  # last 2 turns
-                role = "User" if turn["role"] == "user" else "Assistant"
-                history_context += f"{role}: {turn['text']}\n"
+                if turn["role"] == "user":
+                    history_context += f"User: {turn['text']}\n"
+                else:
+                    sql_info = f" [Executed SQL: {turn.get('sql')}]" if turn.get('sql') else ""
+                    history_context += f"Assistant: {turn['text']}{sql_info}\n"
 
         # 3. Generate SQL
         sql = None
