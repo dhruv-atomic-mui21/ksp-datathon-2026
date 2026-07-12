@@ -7,14 +7,8 @@ const hostname = window.location.hostname;
 if (hostname === "localhost" || hostname === "127.0.0.1") {
     API_BASE = "http://localhost:3000/server/ksp_functions";
 } else {
-    // If running on Zoho Slate (e.g. ksp-datathon-2026-wvdwrtuw.onslate.in)
-    // We parse the prefix and TLD (in/com) to construct the production function URL
-    const slateMatch = hostname.match(/^([a-z0-9-]+)\.onslate\.(in|com)$/i);
-    if (slateMatch) {
-        const projectPrefix = slateMatch[1];
-        const tld = slateMatch[2];
-        API_BASE = `https://${projectPrefix}.catalystserverless.${tld}/server/ksp_functions`;
-    }
+    // Connect directly to live production Catalyst function URL
+    API_BASE = "https://ksp-datathon-2026-60077655375.development.catalystserverless.in/server/ksp_functions";
 }
 
 console.log("Resolved API Base URL:", API_BASE);
