@@ -414,7 +414,15 @@ def run_data_generator():
             dist_id = 1  # Bengaluru City
             dist_name = "Bengaluru City"
             unit_id = 1  # Indiranagar/Majestic Town Station
-            sub_head_id = 8  # Ordinary Theft
+            
+            # Diverse mix of crimes in the hotspot cluster
+            if case_idx <= 30:
+                sub_head_id = 8  # Ordinary Theft
+            elif case_idx <= 40:
+                sub_head_id = 7  # Burglary
+            else:
+                sub_head_id = 3  # Grievous Hurt
+                
             sub_head_info = [sh for sh in crime_sub_heads if sh[0] == sub_head_id][0]
             major_head_id = sub_head_info[1]
             # October - December 2025
@@ -436,19 +444,35 @@ def run_data_generator():
         crime_no = f"{case_cat_id}{dist_id:04d}{unit_id:04d}{year}{serial_str}"
         case_no = f"{year}{serial_str}"
         
-        # 4.5 Geolocation
-        # Bengaluru City center lat: 12.9716, long: 77.5946
-        # Other districts mapped outward
+        # 4.5 Geolocation (Geographically accurate centroids for Karnataka districts)
+        district_coordinates = {
+            1: (12.9716, 77.5946),   # Bengaluru City
+            2: (12.2958, 76.6394),   # Mysuru
+            3: (15.8497, 74.4977),   # Belagavi
+            4: (17.3297, 76.8343),   # Kalaburagi
+            5: (15.3647, 75.1240),   # Hubballi-Dharwad City
+            6: (12.9141, 74.8560),   # Mangaluru City
+            7: (14.4644, 75.9218),   # Davanagere
+            8: (13.9299, 75.5681),   # Shivamogga
+            9: (13.3409, 77.1006),   # Tumakuru
+            10: (16.8302, 75.7100),  # Vijayapura
+            11: (13.3409, 74.7421),  # Udupi
+            12: (12.7850, 75.3200),  # Dakshina Kannada
+            13: (14.8000, 74.6000),  # Uttara Kannada
+            14: (12.4244, 75.7381),  # Kodagu
+            15: (13.0070, 76.1026)   # Hassan
+        }
+        
+        lat_base, lon_base = district_coordinates.get(dist_id, (12.9716, 77.5946))
+        
         if is_hotspot_case:
-            # Highly concentrated around Majestic bus stand (12.976, 77.573)
-            latitude = round(12.9763 + random.uniform(-0.005, 0.005), 6)
-            longitude = round(77.5735 + random.uniform(-0.005, 0.005), 6)
+            # Concentrated theft hotspot around Majestic bus stand (12.976, 77.573)
+            latitude = round(12.9763 + random.uniform(-0.004, 0.004), 6)
+            longitude = round(77.5735 + random.uniform(-0.004, 0.004), 6)
         else:
-            # Baseline district geolocation
-            lat_base = 12.9716 + (dist_id - 1)*0.15
-            lon_base = 77.5946 + (dist_id - 1)*0.05
-            latitude = round(lat_base + random.uniform(-0.1, 0.1), 6)
-            longitude = round(lon_base + random.uniform(-0.1, 0.1), 6)
+            # Realistic spread within a ~15km radius of the city/district centroid
+            latitude = round(lat_base + random.uniform(-0.06, 0.06), 6)
+            longitude = round(lon_base + random.uniform(-0.06, 0.06), 6)
             
         # 4.6 Case Status and Gravity
         case_status_id = random.choices([1, 2, 3, 4], weights=[0.40, 0.45, 0.08, 0.07])[0]

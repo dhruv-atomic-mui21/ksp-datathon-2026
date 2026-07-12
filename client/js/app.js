@@ -308,7 +308,8 @@ function loadGeospatialData() {
                 attribution: '&copy; CartoDB'
             }).addTo(leafletMap);
             
-            leafletMarkersLayer = L.layerGroup().addTo(leafletMap);
+            // Marker cluster group for lag-free rendering
+            leafletMarkersLayer = L.markerClusterGroup().addTo(leafletMap);
             leafletHotspotsLayer = L.layerGroup().addTo(leafletMap);
         } else {
             leafletMarkersLayer.clearLayers();
@@ -428,12 +429,21 @@ function loadNetworkData() {
         
         const options = {
             physics: {
-                barnesHut: { gravitationalConstant: -1800, centralGravity: 0.15, springLength: 95 }
+                stabilization: {
+                    enabled: true,
+                    iterations: 150
+                },
+                barnesHut: { gravitationalConstant: -1200, centralGravity: 0.15, springLength: 95 }
             },
             interaction: { hover: true, tooltipDelay: 100 }
         };
         
         visNetworkInstance = new vis.Network(container, graphData, options);
+
+        // Turn off physics simulation after stabilization to eliminate drag lag
+        visNetworkInstance.on("stabilizationIterationsDone", function () {
+            visNetworkInstance.setOptions({ physics: false });
+        });
 
         // Load repeat offenders in sidebar
         loadRepeatOffendersList();
