@@ -3,8 +3,18 @@ import re
 import logging
 import json
 import sqlite3
+import urllib.request
+import urllib.error
 from typing import List, Dict, Any, Optional
-import google.generativeai as genai
+
+# ----------------------------------------------------------------------
+# OpenRouter Configuration
+# ----------------------------------------------------------------------
+# Paste your OpenRouter API Key directly between the quotes below:
+OPENROUTER_API_KEY = "YOUR_OPENROUTER_API_KEY_HERE"
+
+# OpenRouter model to target (e.g. "google/gemini-2.5-flash", "meta-llama/llama-3-8b-instruct", etc.)
+OPENROUTER_MODEL = "google/gemini-2.5-flash"
 
 try:
     import pymysql
@@ -131,16 +141,51 @@ TRANSLATE_TO_KAN_PROMPT = "You are a bilingual English-Kannada translator for a 
 class NL2SQLEngine:
     def __init__(self, db_connection=None):
         self.db = db_connection
-        # Configure Gemini
-        self.api_key = os.environ.get("GEMINI_API_KEY")
-        if self.api_key:
-            genai.configure(api_key=self.api_key)
-            self.model = genai.GenerativeModel("gemini-1.5-flash")
+        self.model = OPENROUTER_MODEL
+        
+        # Load API Key (either from the direct file variable, or fallback to environment variables)
+        self.api_key = OPENROUTER_API_KEY
+        if not self.api_key or self.api_key == "YOUR_OPENROUTER_API_KEY_HERE":
+            self.api_key = os.environ.get("OPENROUTER_API_KEY")
+            
+        if self.api_key and self.api_key != "YOUR_OPENROUTER_API_KEY_HERE":
             self.has_llm = True
         else:
             self.has_llm = False
-            logger.warning("GEMINI_API_KEY environment variable not set. Running in rule-based fallback mode.")
+            logger.warning("OPENROUTER_API_KEY not configured. Running in rule-based fallback mode.")
+            
         self.conversation_history = []  # list of {role, text}
+
+    def _call_llm(self, prompt: str) -> str:
+        """Makes a direct standard library HTTP request to the OpenRouter chat API."""
+        url = "https://openrouter.ai/api/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://ksp-datathon.gov.in",
+            "X-Title": "KSP Investigation AI"
+        }
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "user", "content": prompt}
+            ]
+        }
+        try:
+            data = json.dumps(payload).encode("utf-8")
+            req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+            with urllib.request.urlopen(req, timeout=25) as response:
+                res_data = json.loads(response.read().decode("utf-8"))
+                return res_data["choices"][0]["message"]["content"].strip()
+        except Exception as e:
+            logger.error(f"OpenRouter completions API call failed: {str(e)}")
+            if isinstance(e, urllib.error.HTTPError):
+                try:
+                    err_msg = e.read().decode('utf-8')
+                    logger.error(f"HTTP Error details: {err_msg}")
+                except Exception:
+                    pass
+            raise e
 
     def is_kannada(self, text: str) -> bool:
         kannada_pattern = re.compile(r'[\u0C80-\u0CFF]+')
@@ -155,18 +200,18 @@ class NL2SQLEngine:
             if "ಬೆಂಗಳೂರು" in lowered: return "Bengaluru City"
             return kannada_query
         try:
-            response = self.model.generate_content(TRANSLATE_TO_ENG_PROMPT + kannada_query)
-            return response.text.strip()
+            response = self._call_llm(TRANSLATE_TO_ENG_PROMPT + kannada_query)
+            return response
         except Exception as e:
             logger.error(f"Kannada to English translation error: {str(e)}")
             return kannada_query
 
     def translate_english_to_kannada(self, english_text: str) -> str:
         if not self.has_llm:
-            return english_text + "\n\n(ಕನ್ನಡ ಭಾಷಾಂತರ ಲಭ್ಯವಿಲ್ಲ - GEMINI_API_KEY not set)"
+            return english_text + "\n\n(ಕನ್ನಡ ಭಾಷಾಂತರ ಲಭ್ಯವಿಲ್ಲ - OPENROUTER_API_KEY not set)"
         try:
-            response = self.model.generate_content(TRANSLATE_TO_KAN_PROMPT + english_text)
-            return response.text.strip() + "\n\n*(ಕನ್ನಡ ಅನುವಾದ ನೆರವು ಲಭ್ಯವಿದೆ - Translation Assisted)*"
+            response = self._call_llm(TRANSLATE_TO_KAN_PROMPT + english_text)
+            return response + "\n\n*(ಕನ್ನಡ ಅನುವಾದ ನೆರವು ಲಭ್ಯವಿದೆ - Translation Assisted)*"
         except Exception as e:
             logger.error(f"English to Kannada translation error: {str(e)}")
             return english_text + "\n\n*(ಅನುವಾದ ದೋಷ - Translation Error)*"
@@ -182,7 +227,7 @@ class NL2SQLEngine:
             english_query = self.translate_kannada_to_english(natural_query)
             logger.info(f"Translated Kannada query: '{natural_query}' -> '{english_query}'")
 
-        # 2. Build history context (injecting previous executed SQL strings so the LLM remembers its actions)
+        # 2. Build history context
         history_context = ""
         if history:
             history_context = "\nConversation context:\n"
@@ -198,8 +243,8 @@ class NL2SQLEngine:
         if self.has_llm:
             prompt = f"{SCHEMA_CONTEXT}\n{FEW_SHOT_EXAMPLES}\n{history_context}\nTranslate this natural query into SQL: {english_query}\nSQL:"
             try:
-                response = self.model.generate_content(prompt)
-                sql = response.text.strip()
+                response = self._call_llm(prompt)
+                sql = response
             except Exception as e:
                 logger.error(f"Gemini SQL generation failed: {str(e)}")
                 sql = self._generate_sql_fallback(english_query)
@@ -293,8 +338,8 @@ class NL2SQLEngine:
                     f"4. Professional Tone: Maintain a strict, helpful police intelligence officer tone.\n"
                     f"5. Keep it concise: Output 3-4 sentences total."
                 )
-            response = self.model.generate_content(prompt)
-            explanation_eng = response.text.strip()
+            response = self._call_llm(prompt)
+            explanation_eng = response
             if is_kannada:
                 return self.translate_english_to_kannada(explanation_eng)
             return explanation_eng
