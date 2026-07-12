@@ -154,9 +154,10 @@ class NL2SQLEngine:
 
     def _call_llm(self, prompt: str) -> str:
         """Makes a direct standard library HTTP request to the Google Gemini developer API."""
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={self.api_key}"
+        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent"
         headers = {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "X-goog-api-key": self.api_key
         }
         payload = {
             "contents": [
