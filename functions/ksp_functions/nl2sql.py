@@ -8,13 +8,10 @@ import urllib.error
 from typing import List, Dict, Any, Optional
 
 # ----------------------------------------------------------------------
-# OpenRouter Configuration
+# Gemini Configuration
 # ----------------------------------------------------------------------
-# Paste your OpenRouter API Key directly between the quotes below:
-OPENROUTER_API_KEY = "YOUR_OPENROUTER_API_KEY_HERE"
-
-# OpenRouter model to target (e.g. "google/gemini-2.5-flash", "meta-llama/llama-3-8b-instruct", etc.)
-OPENROUTER_MODEL = "google/gemini-2.5-flash"
+# Paste your Google Gemini API Key directly between the quotes below:
+GEMINI_API_KEY = "YOUR_GEMINI_API_KEY_HERE"
 
 try:
     import pymysql
@@ -141,34 +138,33 @@ TRANSLATE_TO_KAN_PROMPT = "You are a bilingual English-Kannada translator for a 
 class NL2SQLEngine:
     def __init__(self, db_connection=None):
         self.db = db_connection
-        self.model = OPENROUTER_MODEL
         
         # Load API Key (either from the direct file variable, or fallback to environment variables)
-        self.api_key = OPENROUTER_API_KEY
-        if not self.api_key or self.api_key == "YOUR_OPENROUTER_API_KEY_HERE":
-            self.api_key = os.environ.get("OPENROUTER_API_KEY")
+        self.api_key = GEMINI_API_KEY
+        if not self.api_key or self.api_key == "YOUR_GEMINI_API_KEY_HERE":
+            self.api_key = os.environ.get("GEMINI_API_KEY")
             
-        if self.api_key and self.api_key != "YOUR_OPENROUTER_API_KEY_HERE":
+        if self.api_key and self.api_key != "YOUR_GEMINI_API_KEY_HERE":
             self.has_llm = True
         else:
             self.has_llm = False
-            logger.warning("OPENROUTER_API_KEY not configured. Running in rule-based fallback mode.")
+            logger.warning("GEMINI_API_KEY not configured. Running in rule-based fallback mode.")
             
         self.conversation_history = []  # list of {role, text}
 
     def _call_llm(self, prompt: str) -> str:
-        """Makes a direct standard library HTTP request to the OpenRouter chat API."""
-        url = "https://openrouter.ai/api/v1/chat/completions"
+        """Makes a direct standard library HTTP request to the Google Gemini developer API."""
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={self.api_key}"
         headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-            "HTTP-Referer": "https://ksp-datathon.gov.in",
-            "X-Title": "KSP Investigation AI"
+            "Content-Type": "application/json"
         }
         payload = {
-            "model": self.model,
-            "messages": [
-                {"role": "user", "content": prompt}
+            "contents": [
+                {
+                    "parts": [
+                        {"text": prompt}
+                    ]
+                }
             ]
         }
         try:
@@ -176,9 +172,9 @@ class NL2SQLEngine:
             req = urllib.request.Request(url, data=data, headers=headers, method="POST")
             with urllib.request.urlopen(req, timeout=25) as response:
                 res_data = json.loads(response.read().decode("utf-8"))
-                return res_data["choices"][0]["message"]["content"].strip()
+                return res_data["candidates"][0]["content"]["parts"][0]["text"].strip()
         except Exception as e:
-            logger.error(f"OpenRouter completions API call failed: {str(e)}")
+            logger.error(f"Gemini API call failed: {str(e)}")
             if isinstance(e, urllib.error.HTTPError):
                 try:
                     err_msg = e.read().decode('utf-8')
@@ -208,7 +204,7 @@ class NL2SQLEngine:
 
     def translate_english_to_kannada(self, english_text: str) -> str:
         if not self.has_llm:
-            return english_text + "\n\n(ಕನ್ನಡ ಭಾಷಾಂತರ ಲಭ್ಯವಿಲ್ಲ - OPENROUTER_API_KEY not set)"
+            return english_text + "\n\n(ಕನ್ನಡ ಭಾಷಾಂತರ ಲಭ್ಯವಿಲ್ಲ - GEMINI_API_KEY not set)"
         try:
             response = self._call_llm(TRANSLATE_TO_KAN_PROMPT + english_text)
             return response + "\n\n*(ಕನ್ನಡ ಅನುವಾದ ನೆರವು ಲಭ್ಯವಿದೆ - Translation Assisted)*"
