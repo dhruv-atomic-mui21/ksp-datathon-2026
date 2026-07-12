@@ -48,6 +48,9 @@ def handler(request: Request):
             req_data = request.get_json() or {}
             query = req_data.get("query", "")
             history = req_data.get("history", [])
+            # Keep only the last 6 entries (3 turns) to prevent context inflation
+            history = history[-6:]
+            
             user_info = req_data.get("user", {"email": "guest@ksp.gov.in", "role": "guest"})
             
             email = user_info.get("email", "guest@ksp.gov.in")
@@ -69,18 +72,18 @@ def handler(request: Request):
             
             # Generate Explanation
             if error_message:
-                answer = f"The query generated invalid SQL syntax: {error_message}."
+                answer = "I encountered an issue retrieving those records. Please try rephrasing your search query, or specify the request details again."
                 if is_kan:
-                    answer = f"ರಚಿಸಲಾದ SQL ವಾಕ್ಯರಚನೆ ಅಮಾನ್ಯವಾಗಿದೆ: {error_message}."
+                    answer = "ಕ್ಷಮಿಸಿ, ಆ ದಾಖಲೆಗಳನ್ನು ಹಿಂಪಡೆಯುವಲ್ಲಿ ದೋಷ ಕಂಡುಬಂದಿದೆ. ದಯವಿಟ್ಟು ನಿಮ್ಮ ಪ್ರಶ್ನೆಯನ್ನು ಬೇರೆ ರೀತಿಯಲ್ಲಿ ಕೇಳಿ."
             else:
                 answer = nl2sql_engine.generate_explanation(query, sql_query, results, is_kannada=is_kan)
 
             # Record Audit Log
             db_manager.log_audit(email, role, "NL2SQL_CHAT", sql_query)
 
-            # Update history
+            # Update history (Exclude results database rows to prevent request size inflation)
             history.append({"role": "user", "text": query})
-            history.append({"role": "assistant", "text": answer, "sql": sql_query, "results": results})
+            history.append({"role": "assistant", "text": answer, "sql": sql_query})
 
             return cors_json_response({
                 "answer": answer,

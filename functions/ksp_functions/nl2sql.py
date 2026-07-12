@@ -89,33 +89,28 @@ class DBConnection:
 # NL2SQLEngine with DB execution and explanation
 # ----------------------------------------------------------------------
 SCHEMA_CONTEXT = """
-You are a SQL expert converting natural language into SQL queries for the Karnataka State Police (KSP) Crime Database.
-The database has the following tables and columns:
+Convert natural language to SQL for KSP Crime Database. Tables:
+1. CaseMaster (CaseMasterID PK, CrimeNo, CaseNo, CrimeRegisteredDate, PoliceStationID FK, CaseCategoryID FK, GravityOffenceID, CrimeMajorHeadID FK, CrimeMinorHeadID FK, CaseStatusID FK, latitude, longitude, BriefFacts)
+2. ComplainantDetails (ComplainantID PK, CaseMasterID FK, ComplainantName, AgeYear, GenderID)
+3. Victim (VictimMasterID PK, CaseMasterID FK, VictimName, AgeYear, GenderID)
+4. Accused (AccusedMasterID PK, CaseMasterID FK, AccusedName, AgeYear, GenderID, PhoneNo, Address, BankAccountNo)
+5. ActSectionAssociation (CaseMasterID FK, ActID FK, SectionID FK)
+6. Act (ActCode PK, ActDescription, ShortName)
+7. Section (ActCode FK, SectionCode, SectionDescription)
+8. CrimeHead (CrimeHeadID PK, CrimeGroupName)
+9. CrimeSubHead (CrimeSubHeadID PK, CrimeHeadID FK, CrimeHeadName)
+10. CaseStatusMaster (CaseStatusID PK, CaseStatusName)
+11. District (DistrictID PK, DistrictName)
+12. Unit (UnitID PK, UnitName, DistrictID FK)
+13. CasteMaster (caste_master_id PK, caste_master_name)
+14. ReligionMaster (ReligionID PK, ReligionName)
+15. OccupationMaster (OccupationID PK, OccupationName)
 
-1. CaseMaster (CaseMasterID INT PK, CrimeNo VARCHAR, CaseNo VARCHAR, CrimeRegisteredDate DATE, PolicePersonID INT FK, PoliceStationID INT FK, CaseCategoryID INT FK, GravityOffenceID INT FK, CrimeMajorHeadID INT FK, CrimeMinorHeadID INT FK, CaseStatusID INT FK, CourtID INT FK, IncidentFromDate DATETIME, IncidentToDate DATETIME, InfoReceivedPSDate DATETIME, latitude DECIMAL, longitude DECIMAL, BriefFacts TEXT)
-2. ComplainantDetails (ComplainantID INT PK, CaseMasterID INT FK, ComplainantName VARCHAR, AgeYear INT, OccupationID INT FK, ReligionID INT FK, CasteID INT FK, GenderID INT)
-3. Victim (VictimMasterID INT PK, CaseMasterID INT FK, VictimName VARCHAR, AgeYear INT, GenderID INT, VictimPolice VARCHAR)
-4. Accused (AccusedMasterID INT PK, CaseMasterID INT FK, AccusedName VARCHAR, AgeYear INT, GenderID INT, PersonID VARCHAR, PhoneNo VARCHAR, Address VARCHAR, BankAccountNo VARCHAR)
-5. ActSectionAssociation (CaseMasterID INT FK, ActID VARCHAR FK, SectionID VARCHAR FK, ActOrderID INT, SectionOrderID INT)
-6. Act (ActCode VARCHAR PK, ActDescription VARCHAR, ShortName VARCHAR, Active BIT)
-7. Section (ActCode VARCHAR FK, SectionCode VARCHAR, SectionDescription TEXT, Active BIT)
-8. CrimeHead (CrimeHeadID INT PK, CrimeGroupName VARCHAR, Active BIT)
-9. CrimeSubHead (CrimeSubHeadID INT PK, CrimeHeadID INT FK, CrimeHeadName VARCHAR, SeqID INT)
-10. CaseStatusMaster (CaseStatusID INT PK, CaseStatusName VARCHAR)
-11. District (DistrictID INT PK, DistrictName VARCHAR)
-12. Unit (UnitID INT PK, UnitName VARCHAR, TypeID INT, DistrictID INT FK)
-13. CasteMaster (caste_master_id INT PK, caste_master_name VARCHAR)
-14. ReligionMaster (ReligionID INT PK, ReligionName VARCHAR)
-15. OccupationMaster (OccupationID INT PK, OccupationName VARCHAR)
-
-RULES FOR SQL GENERATION:
-1. ONLY return the SQL statement. No markdown, no code fences, no explanations.
-2. The query MUST be compatible with standard SQL.
-3. Use standard functions like COUNT, SUM, AVG, datetime functions.
-4. When filtering by District name, JOIN CaseMaster with Unit and District.
-5. When filtering by Crime category, JOIN CaseMaster with CrimeSubHead.
-6. Limit result set to a maximum of 100 rows unless specified otherwise.
-7. Use table aliases clearly.
+RULES:
+1. ONLY return the SQL statement. No markdown, no explanations, no code blocks.
+2. Filter District name by JOINing CaseMaster -> Unit -> District.
+3. Filter Crime category by JOINing CaseMaster -> CrimeSubHead.
+4. Limit results to 100 rows.
 """
 
 FEW_SHOT_EXAMPLES = """
