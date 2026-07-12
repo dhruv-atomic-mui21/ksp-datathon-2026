@@ -223,7 +223,7 @@ class NL2SQLEngine:
             query = query[:-1]
         return query.strip()
 
-    def generate_explanation(self, query, results, is_kannada=False):
+    def generate_explanation(self, query, sql_query, results, is_kannada=False):
         """
         Asks Gemini to explain the output rows based on the user query and SQL.
         If offline (no API key), programmatically compiles a clean, detailed summary.
@@ -262,7 +262,30 @@ class NL2SQLEngine:
             return explanation
 
         try:
-            prompt = f"Explain the following search results to a police officer. Natural query: '{query}'. The system executed the SQL: '{query}'. Results returned: {str(results[:3])} (total {len(results)} records). Summarize what was found in 2-3 simple sentences."
+            # Check if query is a simple greeting
+            q_clean = query.strip().lower().replace(".", "").replace("!", "")
+            if q_clean in ["hi", "hello", "hey", "namaste", "good morning", "good afternoon", "hi there", "hello there"]:
+                prompt = (
+                    f"You are 'KSP Investigation AI', an intelligent conversational assistant developed for the Karnataka State Police. "
+                    f"The user just sent a friendly greeting: '{query}'. Respond with a warm, professional welcome. "
+                    f"Tell them that you can help them query the crime database, perform link analysis on offenders, search case histories, "
+                    f"or check risk alerts in English or Kannada. Keep it concise (1-2 sentences) and professional."
+                )
+            else:
+                prompt = (
+                    f"You are a specialized AI assistant for the Karnataka State Police. Analyze the following database search results and provide "
+                    f"a professional, clear summary back to the police officer.\n\n"
+                    f"Police Officer's Question: '{query}'\n"
+                    f"Executed SQL Database Query: '{sql_query}'\n"
+                    f"Database Results (up to 10 rows): {str(results[:10])}\n\n"
+                    f"Instructions:\n"
+                    f"1. Direct Answer: Answer the officer's question directly based on the database results.\n"
+                    f"2. Detail & Insights: Include key details from the data such as Crime Numbers, accused names, registered dates, and specific brief facts if present.\n"
+                    f"3. Actionable Suggestion: Suggest a helpful next logical step for the investigation based on what was found (e.g. 'You can check their phone numbers/bank accounts in the Link Analysis graph under Challenge 02', or 'Verify if they have accomplices').\n"
+                    f"4. Professional Tone: Maintain a strict, helpful police intelligence officer tone.\n"
+                    f"5. Keep it concise: Output 3-4 sentences total."
+                )
+            
             response = self.model.generate_content(prompt)
             explanation_eng = response.text.strip()
             

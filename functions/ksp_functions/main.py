@@ -72,7 +72,7 @@ def handler(request: Request):
                 if is_kan:
                     answer = f"ರಚಿಸಲಾದ SQL ವಾಕ್ಯರಚನೆ ಅಮಾನ್ಯವಾಗಿದೆ: {error_message}."
             else:
-                answer = nl2sql_engine.generate_explanation(query, results, is_kannada=is_kan)
+                answer = nl2sql_engine.generate_explanation(query, sql_query, results, is_kannada=is_kan)
 
             # Record Audit Log
             db_manager.log_audit(email, role, "NL2SQL_CHAT", sql_query)
