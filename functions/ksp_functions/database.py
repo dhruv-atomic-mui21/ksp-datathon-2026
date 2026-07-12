@@ -9,6 +9,9 @@ class DatabaseManager:
         self.sqlite_path = sqlite_path
         self.logger = logging.getLogger()
 
+    def execute(self, sql_query):
+        return self.execute_query(sql_query)
+
     def execute_query(self, sql_query, params=None):
         """
         Executes a SELECT query and returns a list of flat dictionaries:

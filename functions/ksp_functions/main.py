@@ -12,7 +12,7 @@ logger = logging.getLogger()
 
 # Initialize Singletons
 db_manager = DatabaseManager()
-nl2sql_engine = NL2SQLEngine()
+nl2sql_engine = NL2SQLEngine(db_manager)
 analytics_engine = AnalyticsEngine(db_manager)
 
 def handler(request: Request):
@@ -54,7 +54,8 @@ def handler(request: Request):
             role = user_info.get("role", "guest")
 
             # Generate SQL
-            sql_query, is_kan = nl2sql_engine.generate_sql(query, history)
+            is_kan = nl2sql_engine.is_kannada(query)
+            sql_query = nl2sql_engine.generate_sql(query, history)
             
             # Execute SQL
             results = []
