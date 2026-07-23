@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KSP AI-Driven Crime Analytics & Link-Analysis Platform</title>
-    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="css/style.css">
     
     <!-- Leaflet Map CSS & JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -193,12 +193,7 @@
     <header class="ksp-header">
         <div class="ksp-brand">
             <div class="ksp-logo">KSP</div>
-            <div class="ksp-title">Karnataka State Police</div>
-        </div>
-        <div class="ksp-nav-links">
-            <a href="../index.html" class="ksp-nav-link">Home Portal</a>
-            <a href="../challenge01/index.html" class="ksp-nav-link">Challenge 01</a>
-            <a href="index.html" class="ksp-nav-link active">Challenge 02</a>
+            <div class="ksp-title">Karnataka State Police — Analytics & Link-Analysis</div>
         </div>
     </header>
 
@@ -209,9 +204,14 @@
             
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                 <h1 class="text-gradient" style="font-size: 2.2rem; font-weight: 800;">Analytics & Visualization Dashboard</h1>
-                <div class="user-badge">
-                    <span>Access Role:</span>
-                    <strong><span id="activeUserRoleDisplay">Investigator</span></strong>
+                <div class="user-badge" style="background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.3); color: var(--accent-gold);">
+                    <span>Simulation Role:</span>
+                    <select id="userRoleSelect" onchange="updateSessionRole()" style="background: transparent; color: var(--accent-gold); font-weight: 700; border: none; outline: none; cursor: pointer; padding: 0; min-width: 150px;">
+                        <option value="investigator">Investigator (No Audit)</option>
+                        <option value="analyst">Crime Analyst (No Audit)</option>
+                        <option value="supervisor">Supervisor (Full Access)</option>
+                        <option value="policymaker">Policymaker (Full Access)</option>
+                    </select>
                 </div>
             </div>
             
@@ -407,11 +407,33 @@
         </div>
     </div>
 
-    <script src="../js/app.js"></script>
+    <script src="js/app.js"></script>
     <script>
-        // Set user role info from localStorage
-        const activeRole = localStorage.getItem("ksp_user_role") || "investigator";
-        document.getElementById("activeUserRoleDisplay").innerText = activeRole.toUpperCase();
+        // Update role dynamically and reload audit tab
+        function updateSessionRole() {
+            const roleSelect = document.getElementById("userRoleSelect");
+            const role = roleSelect.value;
+            const emails = {
+                investigator: "io.patil@ksp.gov.in",
+                analyst: "analyst.gowda@ksp.gov.in",
+                supervisor: "sp.murthy@ksp.gov.in",
+                policymaker: "dg.siddappa@ksp.gov.in"
+            };
+            localStorage.setItem("ksp_user_role", role);
+            localStorage.setItem("ksp_user_email", emails[role]);
+            
+            // Reload the audit data specifically if we are on the audit tab
+            if (typeof loadAuditData === "function") {
+                loadAuditData();
+            }
+        }
+
+        // Set user role info from localStorage on initial load
+        let activeRole = localStorage.getItem("ksp_user_role") || "investigator";
+        let roleSelect = document.getElementById("userRoleSelect");
+        if(roleSelect) {
+            roleSelect.value = activeRole;
+        }
         
         // Load initial analytics data on load
         window.onload = function() {

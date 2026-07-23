@@ -8,3 +8,9 @@ __pycache__/
 .agents
 .vscode/
 node_modules/
+catalyst-debug.log
+test_export.pdf
+.build/
+dist/
+*.tar.gz
+*.zip

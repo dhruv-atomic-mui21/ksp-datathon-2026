@@ -5,7 +5,8 @@
     "stack": "python_3_12",
     "memory": 256,
     "env_variables": {
-      "GEMINI_API_KEY": "[ENCRYPTION_KEY]"
+      "GEMINI_API_KEY": "YOUR_GEMINI_API_KEY_HERE",
+      "SARVAM_API_KEY": "YOUR_SARVAM_API_KEY_HERE"
     }
   },
   "execution": {

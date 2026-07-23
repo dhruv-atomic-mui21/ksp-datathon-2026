@@ -1,6 +1,7 @@
 import os
 import math
 import re
+import time
 from datetime import datetime
 import networkx as nx
 from database import DatabaseManager
@@ -8,6 +9,19 @@ from database import DatabaseManager
 class AnalyticsEngine:
     def __init__(self, db_manager):
         self.db = db_manager
+        self._cache = {}
+
+    def _get_cache(self, key):
+        if key in self._cache:
+            val, expiry = self._cache[key]
+            if time.time() < expiry:
+                return val
+            else:
+                del self._cache[key]
+        return None
+
+    def _set_cache(self, key, val, ttl=300):
+        self._cache[key] = (val, time.time() + ttl)
 
     def _mean(self, lst):
         return sum(lst) / len(lst) if lst else 0.0
@@ -22,38 +36,54 @@ class AnalyticsEngine:
     def _dbscan(self, coords, eps=0.01, min_samples=3):
         n = len(coords)
         labels = [-1] * n
+        visited = [False] * n
         cluster_id = 0
         
-        def get_neighbors(i):
-            neighbors = []
-            for j in range(n):
-                dist = math.sqrt((coords[i][0] - coords[j][0])**2 + (coords[i][1] - coords[j][1])**2)
-                if dist <= eps:
-                    neighbors.append(j)
-            return neighbors
-
+        eps_sq = eps ** 2
+        
+        # Precompute neighbors using squared distance to avoid sqrt and speed up
+        neighbors = []
         for i in range(n):
-            if labels[i] != -1:
-                continue
-            neighbors = get_neighbors(i)
-            if len(neighbors) < min_samples:
-                labels[i] = -1
-                continue
+            i_neighbors = []
+            ci = coords[i]
+            for j in range(n):
+                if (ci[0] - coords[j][0])**2 + (ci[1] - coords[j][1])**2 <= eps_sq:
+                    i_neighbors.append(j)
+            neighbors.append(i_neighbors)
             
-            labels[i] = cluster_id
-            queue = [x for x in neighbors if x != i]
-            for x in queue:
-                if labels[x] == -1:
-                    labels[x] = cluster_id
-                if labels[x] != -1:
-                    continue
-                labels[x] = cluster_id
-                x_neighbors = get_neighbors(x)
-                if len(x_neighbors) >= min_samples:
-                    for y in x_neighbors:
-                        if y not in queue:
-                            queue.append(y)
-            cluster_id += 1
+        for i in range(n):
+            if visited[i]:
+                continue
+            visited[i] = True
+            
+            i_neighbors = neighbors[i]
+            if len(i_neighbors) < min_samples:
+                labels[i] = -1  # Noise
+            else:
+                labels[i] = cluster_id
+                # Expand cluster
+                queue = list(i_neighbors)
+                queue_set = set(queue)
+                
+                idx = 0
+                while idx < len(queue):
+                    point = queue[idx]
+                    idx += 1
+                    
+                    if not visited[point]:
+                        visited[point] = True
+                        p_neighbors = neighbors[point]
+                        if len(p_neighbors) >= min_samples:
+                            # Add new neighbors to queue
+                            for nb in p_neighbors:
+                                if nb not in queue_set:
+                                    queue.append(nb)
+                                    queue_set.add(nb)
+                                    
+                    if labels[point] == -1:
+                        labels[point] = cluster_id
+                        
+                cluster_id += 1
         return labels
 
     # ----------------------------------------------------
@@ -64,6 +94,11 @@ class AnalyticsEngine:
         Builds a network graph of criminals, cases, phone numbers, bank accounts, and addresses
         using NetworkX, and returns a JSON payload for D3/Vis.js visualization.
         """
+        cache_key = ("get_criminal_network", filter_case_id, filter_accused_name)
+        cached = self._get_cache(cache_key)
+        if cached is not None:
+            return cached
+
         # Query accused details
         sql = """
             SELECT A.AccusedMasterID, A.CaseMasterID, A.AccusedName, A.PhoneNo, A.Address, A.BankAccountNo, 
@@ -75,14 +110,6 @@ class AnalyticsEngine:
         rows = self.db.execute_query(sql)
         
         G = nx.Graph()
-        
-        # We will build nodes and edges. To prevent ID clashes between Accused, Case, and shared-attribute nodes,
-        # we prefix the node IDs:
-        # 'A_name' for Accused (grouping by name to capture repeat offenders),
-        # 'C_id' for Cases,
-        # 'P_no' for Phone,
-        # 'AD_addr' for Address,
-        # 'B_acc' for Bank Account.
         
         for r in rows:
             acc_name = r["AccusedName"]
@@ -100,20 +127,20 @@ class AnalyticsEngine:
             addr_node = f"AD_{addr}" if addr else None
             bank_node = f"B_{bank}" if bank else None
             
-            G.add_node(acc_node, label=acc_name, type="accused", detail=f"Accused Person")
+            G.add_node(acc_node, label=acc_name, type="accused", detail="Accused Person")
             G.add_node(case_node, label=case_no, type="case", detail=f"Case: {crime_head} ({r['CrimeRegisteredDate']})")
             
             # Edges: Accused in Case
             G.add_edge(acc_node, case_node, rel="ACCUSED_IN")
             
             if phone_node:
-                G.add_node(phone_node, label=phone, type="phone", detail=f"Phone Number")
+                G.add_node(phone_node, label=phone, type="phone", detail="Phone Number")
                 G.add_edge(acc_node, phone_node, rel="HAS_PHONE")
             if addr_node:
                 G.add_node(addr_node, label=addr[:30] + "...", type="address", detail=f"Address: {addr}")
                 G.add_edge(acc_node, addr_node, rel="LIVES_AT")
             if bank_node:
-                G.add_node(bank_node, label=bank, type="bank", detail=f"Bank Account")
+                G.add_node(bank_node, label=bank, type="bank", detail="Bank Account")
                 G.add_edge(acc_node, bank_node, rel="HAS_BANK_ACCOUNT")
 
         # Apply filtering if requested
@@ -148,7 +175,6 @@ class AnalyticsEngine:
                 subgraph = G.subgraph(interest_nodes)
 
         # Community/Cluster Detection
-        # Since we use standard networkx, we can find connected components as basic communities (gang structures)
         components = list(nx.connected_components(subgraph))
         community_map = {}
         for comp_idx, comp in enumerate(components):
@@ -175,7 +201,7 @@ class AnalyticsEngine:
                 "label": data.get("rel", "")
             })
             
-        return {
+        res = {
             "nodes": nodes_list,
             "edges": edges_list,
             "summary": {
@@ -184,12 +210,19 @@ class AnalyticsEngine:
                 "suspected_gangs_count": len(components)
             }
         }
+        self._set_cache(cache_key, res)
+        return res
 
     def get_repeat_offenders(self):
         """
         Scans accused persons, flags those associated with multiple cases,
         and aggregates their history and modus operandi.
         """
+        cache_key = "get_repeat_offenders"
+        cached = self._get_cache(cache_key)
+        if cached is not None:
+            return cached
+
         sql = """
             SELECT A.AccusedName, COUNT(DISTINCT A.CaseMasterID) as CaseCount, 
                    GROUP_CONCAT(CM.CrimeNo) as CaseNos, GROUP_CONCAT(CM.BriefFacts, '||') as AllFacts
@@ -219,6 +252,8 @@ class AnalyticsEngine:
                 "cases": r["CaseNos"].split(","),
                 "modus_operandi": common_mo
             })
+            
+        self._set_cache(cache_key, repeat_offenders)
         return repeat_offenders
 
     # ----------------------------------------------------
@@ -229,6 +264,11 @@ class AnalyticsEngine:
         Loads coordinates, runs DBSCAN clustering to detect crime hotspots,
         calculates temporal peak windows, and triggers volume spike alerts.
         """
+        cache_key = ("get_hotspots", district_name, crime_category)
+        cached = self._get_cache(cache_key)
+        if cached is not None:
+            return cached
+
         sql = """
             SELECT CM.CaseMasterID, CM.CrimeNo, CM.latitude, CM.longitude, 
                    CM.CrimeRegisteredDate, CSH.CrimeHeadName, D.DistrictName
@@ -238,11 +278,9 @@ class AnalyticsEngine:
             JOIN CrimeSubHead CSH ON CM.CrimeMinorHeadID = CSH.CrimeSubHeadID
             WHERE CM.latitude IS NOT NULL AND CM.longitude IS NOT NULL
         """
-        params = []
-        
         rows = self.db.execute_query(sql)
         
-        # Filter in Python for simplicity
+        # Filter in Python
         filtered_rows = rows
         if district_name:
             filtered_rows = [r for r in filtered_rows if r["DistrictName"].lower() == district_name.lower()]
@@ -251,7 +289,7 @@ class AnalyticsEngine:
 
         if len(filtered_rows) < 5:
             # Not enough data for DBSCAN, return raw points
-            return {
+            res = {
                 "hotspots": [],
                 "raw_cases": [{
                     "id": r["CaseMasterID"], "no": r["CrimeNo"], "lat": float(r["latitude"]), "lng": float(r["longitude"]),
@@ -259,18 +297,20 @@ class AnalyticsEngine:
                 } for r in filtered_rows],
                 "spike_alerts": []
             }
+            self._set_cache(cache_key, res)
+            return res
 
         # Format coordinate matrix
         coords = [[float(r["latitude"]), float(r["longitude"])] for r in filtered_rows]
         
-        # Run pure-Python DBSCAN: eps = 0.01 (~1km), min_samples = 3
+        # Run optimized DBSCAN: eps = 0.01 (~1km), min_samples = 3
         labels = self._dbscan(coords, eps=0.01, min_samples=3)
         
         # Aggregate hotspots
         clusters = {}
         for idx, label in enumerate(labels):
             if label == -1:
-                continue # Noise
+                continue
             if label not in clusters:
                 clusters[label] = []
             clusters[label].append(filtered_rows[idx])
@@ -298,8 +338,6 @@ class AnalyticsEngine:
             })
 
         # Calculate monthly counts for trend detection & Spike Alert
-        all_dates = [datetime.strptime(r["CrimeRegisteredDate"], "%Y-%m-%d") for r in rows]
-        # Calculate monthly averages per district
         district_counts = {}
         for r in rows:
             dist = r["DistrictName"]
@@ -318,7 +356,6 @@ class AnalyticsEngine:
                 if std == 0:
                     std = 1.0
                 
-                # Check current month (e.g. latest entry in history)
                 latest_count = history[-1]
                 z_score = (latest_count - avg) / std
                 if z_score > 1.8:
@@ -330,7 +367,7 @@ class AnalyticsEngine:
                         "status": "CRITICAL SPIKE ALERT" if z_score > 2.2 else "WARNING SPIKE"
                     })
 
-        return {
+        res = {
             "hotspots": hotspots,
             "raw_cases": [{
                 "id": r["CaseMasterID"], "no": r["CrimeNo"], "lat": float(r["latitude"]), "lng": float(r["longitude"]),
@@ -338,6 +375,8 @@ class AnalyticsEngine:
             } for r in filtered_rows],
             "spike_alerts": spike_alerts
         }
+        self._set_cache(cache_key, res)
+        return res
 
     # ----------------------------------------------------
     # 3. Predictive Risk Scoring & Anomaly Detection
@@ -347,45 +386,49 @@ class AnalyticsEngine:
         Calculates risk scores per district, trains a RandomForestClassifier to predict crime severity risk,
         and generates highly reliable mathematical SHAP attributions without compile-time overhead.
         """
+        cache_key = "get_predictive_risk"
+        cached = self._get_cache(cache_key)
+        if cached is not None:
+            return cached
+
         # Feature Engineering: aggregate historical frequency, seasonality, and recent spikes
-        sql = "SELECT CM.CaseMasterID, CM.CrimeRegisteredDate, D.DistrictName, CSH.CrimeHeadName FROM CaseMaster CM JOIN Unit U ON CM.PoliceStationID = U.UnitID JOIN District D ON U.DistrictID = D.DistrictID JOIN CrimeSubHead CSH ON CM.CrimeMinorHeadID = CSH.CrimeSubHeadID"
+        sql = """
+            SELECT CM.CaseMasterID, CM.CrimeRegisteredDate, D.DistrictName, CSH.CrimeHeadName 
+            FROM CaseMaster CM 
+            JOIN Unit U ON CM.PoliceStationID = U.UnitID 
+            JOIN District D ON U.DistrictID = D.DistrictID 
+            JOIN CrimeSubHead CSH ON CM.CrimeMinorHeadID = CSH.CrimeSubHeadID
+        """
         rows = self.db.execute_query(sql)
         
-        # Group by district
+        # O(N) pre-grouping for aggregations
         dist_history = {}
+        cyber_history = {}
         for r in rows:
             dist = r["DistrictName"]
             dist_history[dist] = dist_history.get(dist, 0) + 1
+            if r["CrimeHeadName"] == "Cyber Crime (IT Act)":
+                cyber_history[dist] = cyber_history.get(dist, 0) + 1
             
         total_cases = len(rows)
         
         risk_scores = []
         for dist_name, count in dist_history.items():
-            # Normalized frequency
             freq_score = (count / total_cases) * 10
             
-            # Simple simulation weights for predictive training
-            # Let's say feature vectors are: [Historical Frequency, Seasonal Modifier, Cybercrime Ratio]
-            cyber_cases = len([r for r in rows if r["DistrictName"] == dist_name and r["CrimeHeadName"] == "Cyber Crime (IT Act)"])
+            cyber_cases = cyber_history.get(dist_name, 0)
             cyber_ratio = (cyber_cases / count) if count > 0 else 0
             
-            # Predict risk class (0: Low, 1: Medium, 2: High)
             risk_class = 0
             if freq_score > 3.0:
-                risk_class = 2  # High (Bengaluru City)
+                risk_class = 2  # High
             elif freq_score > 1.0:
                 risk_class = 1  # Medium
                 
-            # Run local path attribution logic (SHAP replica)
-            # Feature contribution to output risk score
-            base_value = 0.5 # global average
-            
-            # Contributions:
             c_freq = freq_score * 0.08
             c_cyber = cyber_ratio * 0.2
-            c_season = 0.12 # constant modifier
+            c_season = 0.12  # constant modifier
             
-            # Normalize to total score
             total_contrib = c_freq + c_cyber + c_season
             scale = freq_score / total_contrib if total_contrib > 0 else 1
             
@@ -400,6 +443,7 @@ class AnalyticsEngine:
                 }
             })
             
+        self._set_cache(cache_key, risk_scores)
         return risk_scores
 
     def get_anomalies(self):
@@ -408,61 +452,67 @@ class AnalyticsEngine:
         or MO outliers (such as 72yo cyber fraud or staged snakebites) and calculates
         corresponding normalized anomaly scores.
         """
+        cache_key = "get_anomalies"
+        cached = self._get_cache(cache_key)
+        if cached is not None:
+            return cached
+
+        # Optimized: Removed unused joins (ComplainantDetails and OccupationMaster) to eliminate Cartesian product
         sql = """
             SELECT CM.CaseMasterID, CM.CrimeNo, CM.BriefFacts, CM.latitude, CM.longitude,
-                   CSH.CrimeHeadName, A.AgeYear as AccusedAge, CD.AgeYear as ComplainantAge,
-                   OM.OccupationName as ComplainantOccupation, D.DistrictName
+                   CSH.CrimeHeadName, A.AgeYear as AccusedAge, D.DistrictName
             FROM CaseMaster CM
             LEFT JOIN Accused A ON CM.CaseMasterID = A.CaseMasterID
-            LEFT JOIN ComplainantDetails CD ON CM.CaseMasterID = CD.CaseMasterID
-            LEFT JOIN OccupationMaster OM ON CD.OccupationID = OM.OccupationID
             JOIN Unit U ON CM.PoliceStationID = U.UnitID
             JOIN District D ON U.DistrictID = D.DistrictID
             JOIN CrimeSubHead CSH ON CM.CrimeMinorHeadID = CSH.CrimeSubHeadID
         """
         rows = self.db.execute_query(sql)
         
+        flagged_case_ids = set()
         anomalies = []
         for r in rows:
+            case_id = r["CaseMasterID"]
+            if case_id in flagged_case_ids:
+                continue
+                
             acc_age = r["AccusedAge"]
-            comp_age = r["ComplainantAge"]
             facts = (r["BriefFacts"] or "").lower()
             category = r["CrimeHeadName"]
             district = r["DistrictName"]
             
             is_anomaly = False
             reason = ""
-            score = 0.1 # baseline score
+            score = 0.1
             
-            # Anomaly 1: Cobra/snake staged murder
             if "cobra" in facts or "snake" in facts:
                 is_anomaly = True
                 reason = "Statistically anomalous Modus Operandi (venomous cobra used in staged murder)"
                 score = -0.450
                 
-            # Anomaly 2: Cyber crime by elderly farmer
             elif acc_age and acc_age > 70 and category == "Cyber Crime (IT Act)":
                 is_anomaly = True
                 reason = f"Elderly accused ({acc_age} yrs) associated with high-tech Cyber Crime in rural area ({district})"
                 score = -0.320
                 
-            # Anomaly 3: Extremely young accused for heinous crime
             elif acc_age and acc_age < 12 and category in ["Murder", "Dacoity"]:
                 is_anomaly = True
                 reason = f"Underage accused ({acc_age} yrs) associated with major offence ({category})"
                 score = -0.280
 
             if is_anomaly:
+                flagged_case_ids.add(case_id)
                 anomalies.append({
-                    "case_id": r["CaseMasterID"],
+                    "case_id": case_id,
                     "crime_no": r["CrimeNo"],
-                    "district": r["DistrictName"],
-                    "crime_category": r["CrimeHeadName"],
+                    "district": district,
+                    "crime_category": category,
                     "anomaly_score": score,
                     "reason_flagged": reason,
                     "brief_facts": r["BriefFacts"]
                 })
                 
+        self._set_cache(cache_key, anomalies)
         return anomalies
 
     # ----------------------------------------------------
@@ -473,7 +523,11 @@ class AnalyticsEngine:
         Cross-tabulates demographic variables (Age, Occupation, Caste, Religion)
         against crime types to return sociological correlation patterns.
         """
-        # Accused age breakdown
+        cache_key = "get_sociological_insights"
+        cached = self._get_cache(cache_key)
+        if cached is not None:
+            return cached
+
         sql_acc = """
             SELECT A.AgeYear, CSH.CrimeHeadName
             FROM Accused A
@@ -497,7 +551,6 @@ class AnalyticsEngine:
             if "Theft" in r["CrimeHeadName"] or "Robbery" in r["CrimeHeadName"] or "Burglary" in r["CrimeHeadName"]:
                 theft_by_age[bin_key] += 1
 
-        # Complainant occupation vs crime head
         sql_occ = """
             SELECT OM.OccupationName, CSH.CrimeHeadName, COUNT(*) as Count
             FROM ComplainantDetails CD
@@ -516,7 +569,7 @@ class AnalyticsEngine:
                 "incident_count": r["Count"]
             })
 
-        return {
+        res = {
             "age_demographics": {
                 "overall_distribution": age_bins,
                 "property_crime_distribution": theft_by_age
@@ -524,6 +577,8 @@ class AnalyticsEngine:
             "occupation_correlations": occ_stats,
             "interpretation_notes": "Descriptive exploratory analytics indicating relative correlations on calibrated synthetic KSP data."
         }
+        self._set_cache(cache_key, res)
+        return res
 
     # ----------------------------------------------------
     # 5. Investigator Decision Support
@@ -533,7 +588,11 @@ class AnalyticsEngine:
         Returns a structured case summary and matches adjacent/similar cases
         in the system to suggest investigative leads.
         """
-        # Case summary query
+        cache_key = ("get_leads_and_summary", case_id)
+        cached = self._get_cache(cache_key)
+        if cached is not None:
+            return cached
+
         sql_case = f"""
             SELECT CM.CaseMasterID, CM.CrimeNo, CM.CaseNo, CM.CrimeRegisteredDate, CM.BriefFacts,
                    CM.latitude, CM.longitude, U.UnitName, CSH.CrimeHeadName, CM.CrimeMinorHeadID
@@ -548,20 +607,15 @@ class AnalyticsEngine:
             
         case_data = case_rows[0]
         
-        # Get accused
         sql_acc = f"SELECT AccusedName, PhoneNo, Address, BankAccountNo FROM Accused WHERE CaseMasterID = {case_id}"
         acc_rows = self.db.execute_query(sql_acc)
         
-        # Get victims
         sql_vic = f"SELECT VictimName, AgeYear, GenderID FROM Victim WHERE CaseMasterID = {case_id}"
         vic_rows = self.db.execute_query(sql_vic)
         
-        # Get complainants
         sql_comp = f"SELECT ComplainantName, AgeYear FROM ComplainantDetails WHERE CaseMasterID = {case_id}"
         comp_rows = self.db.execute_query(sql_comp)
 
-        # Similar case finder (rule-based)
-        # Fetch other cases of same sub-head
         sub_head_id = case_data["CrimeMinorHeadID"]
         sql_similar = f"""
             SELECT CM.CaseMasterID, CM.CrimeNo, CM.BriefFacts, CM.CrimeRegisteredDate
@@ -571,17 +625,13 @@ class AnalyticsEngine:
         """
         similar_rows = self.db.execute_query(sql_similar)
         
-        # Calculate matching scores
         leads = []
         for s in similar_rows:
-            score = 5 # baseline for same crime sub-head
-            # Check if any accused name or MO matches
-            mo_match = False
+            score = 5
             for acc in acc_rows:
                 acc_name_part = acc["AccusedName"].split(" ")[0]
                 if acc_name_part.lower() in s["BriefFacts"].lower():
-                    score += 15 # major accused link!
-                    mo_match = True
+                    score += 15
             
             if "burglary" in case_data["BriefFacts"].lower() and "burglary" in s["BriefFacts"].lower():
                 score += 3
@@ -591,14 +641,13 @@ class AnalyticsEngine:
                     "crime_no": s["CrimeNo"],
                     "registered_date": s["CrimeRegisteredDate"],
                     "similarity_score": score,
-                    "lead_description": f"Linked prior record found for the accused. MO match detected.",
+                    "lead_description": "Linked prior record found for the accused. MO match detected.",
                     "details": s["BriefFacts"]
                 })
                 
-        # Sort leads by score descending
         leads = sorted(leads, key=lambda x: x["similarity_score"], reverse=True)
 
-        return {
+        res = {
             "case_summary": {
                 "crime_no": case_data["CrimeNo"],
                 "case_no": case_data["CaseNo"],
@@ -614,5 +663,5 @@ class AnalyticsEngine:
             },
             "investigative_leads": leads
         }
-import re
-from datetime import datetime
+        self._set_cache(cache_key, res)
+        return res

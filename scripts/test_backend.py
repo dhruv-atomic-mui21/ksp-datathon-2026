@@ -13,11 +13,13 @@ app = Flask("test_app")
 
 # Mock request class that matches Flask.Request properties accessed in main.py
 class MockRequest:
-    def __init__(self, path, method="GET", json_data=None, args=None):
+    def __init__(self, path, method="GET", json_data=None, args=None, headers=None):
         self.path = path
         self.method = method
         self.json_data = json_data or {}
         self.args = args or {}
+        self.headers = headers or {}
+        self.remote_addr = "127.0.0.1"
 
     def get_json(self):
         return self.json_data

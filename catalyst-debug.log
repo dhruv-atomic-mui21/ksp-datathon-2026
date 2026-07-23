@@ -1,69 +1,145 @@
-[debug] [2026-07-11T16:00:14.344Z] : 
-[debug] [2026-07-11T16:00:14.347Z] : ----------------------------------------------------------------------
-[debug] [2026-07-11T16:00:14.347Z] : Command:      C:\Program Files\nodejs\node.exe C:\Users\dhruv\AppData\Roaming\npm\node_modules\zcatalyst-cli\lib\bin\catalyst.js serve
-[debug] [2026-07-11T16:00:14.348Z] : CLI Version:  1.26.2
-[debug] [2026-07-11T16:00:14.348Z] : Platform:     win32
-[debug] [2026-07-11T16:00:14.348Z] : Node Version: v22.14.0
-[debug] [2026-07-11T16:00:14.348Z] : Time:         Sat Jul 11 2026 21:30:14 GMT+0530 (India Standard Time)
-[debug] [2026-07-11T16:00:14.349Z] : ----------------------------------------------------------------------
-[debug] [2026-07-11T16:00:14.349Z] : 
-[debug] [2026-07-11T16:00:15.764Z] : > authorizing via signed-in user option
-[debug] [2026-07-11T16:00:15.764Z] : > command requires scopes: ["ZohoCatalyst.projects.ALL","ZohoCatalyst.apigateway.apis.READ","ZohoCatalyst.apigateway.READ","ZohoCatalyst.segments.ALL","ZohoCatalyst.cache.READ","ZohoCatalyst.cache.CREATE","ZohoCatalyst.cache.DELETE","ZohoCatalyst.projects.ALL","ZohoCatalyst.cron.ALL","ZohoCatalyst.zcql.CREATE","ZohoCatalyst.projects.users.READ","ZohoCatalyst.projects.users.CREATE","ZohoCatalyst.projects.users.DELETE","ZohoCatalyst.projects.users.UPDATE","ZohoCatalyst.authentication.CREATE","ZohoCatalyst.email.CREATE","ZohoCatalyst.tables.ALL","ZohoCatalyst.tables.rows.ALL","ZohoCatalyst.tables.columns.ALL","ZohoCatalyst.tables.bulk.CREATE","ZohoCatalyst.tables.bulk.READ","ZohoCatalyst.folders.ALL","ZohoCatalyst.files.CREATE","ZohoCatalyst.files.READ","ZohoCatalyst.files.DELETE","ZohoCatalyst.functions.ALL","ZohoCatalyst.functions.EXECUTE","ZohoCatalyst.eventlistners.ALL","ZohoCatalyst.eventlisteners.produce","ZohoCatalyst.security.rules.Read","ZohoCatalyst.security.rules.Update","ZohoCatalyst.notifications.mobile","ZohoCatalyst.notifications.web","ZohoCatalyst.search.READ","ZohoCatalyst.mlkit.READ","QuickML.deployment.READ","ZohoCatalyst.pdfshot.execute","ZohoCatalyst.grid.READ","ZohoCatalyst.grid.terminate","ZohoCatalyst.circuits.execution.DELETE","ZohoCatalyst.circuits.execution.READ","ZohoCatalyst.circuits.execute","ZohoCatalyst.appsail.Read","ZohoCatalyst.jobpool.READ","ZohoCatalyst.job.ALL","ZohoCatalyst.nosql.READ","ZohoCatalyst.nosql.rows.ALL"]
-[debug] [2026-07-11T16:00:15.792Z] : >>>> HTTP REQUEST : GET https://api.catalyst.zoho.in/baas/v1/project/46647000000013048 
+[debug] [2026-07-23T07:15:13.441Z] : 
+[debug] [2026-07-23T07:15:13.442Z] : ----------------------------------------------------------------------
+[debug] [2026-07-23T07:15:13.443Z] : Command:      C:\Program Files\nodejs\node.exe C:\Users\dhruv\AppData\Roaming\npm\node_modules\zcatalyst-cli\lib\bin\catalyst.js serve
+[debug] [2026-07-23T07:15:13.443Z] : CLI Version:  1.26.2
+[debug] [2026-07-23T07:15:13.443Z] : Platform:     win32
+[debug] [2026-07-23T07:15:13.443Z] : Node Version: v22.14.0
+[debug] [2026-07-23T07:15:13.443Z] : Time:         Thu Jul 23 2026 12:45:13 GMT+0530 (India Standard Time)
+[debug] [2026-07-23T07:15:13.443Z] : ----------------------------------------------------------------------
+[debug] [2026-07-23T07:15:13.443Z] : 
+[debug] [2026-07-23T07:15:14.289Z] : > authorizing via signed-in user option
+[debug] [2026-07-23T07:15:14.290Z] : > command requires scopes: ["ZohoCatalyst.projects.ALL","ZohoCatalyst.apigateway.apis.READ","ZohoCatalyst.apigateway.READ","ZohoCatalyst.segments.ALL","ZohoCatalyst.cache.READ","ZohoCatalyst.cache.CREATE","ZohoCatalyst.cache.DELETE","ZohoCatalyst.projects.ALL","ZohoCatalyst.cron.ALL","ZohoCatalyst.zcql.CREATE","ZohoCatalyst.projects.users.READ","ZohoCatalyst.projects.users.CREATE","ZohoCatalyst.projects.users.DELETE","ZohoCatalyst.projects.users.UPDATE","ZohoCatalyst.authentication.CREATE","ZohoCatalyst.email.CREATE","ZohoCatalyst.tables.ALL","ZohoCatalyst.tables.rows.ALL","ZohoCatalyst.tables.columns.ALL","ZohoCatalyst.tables.bulk.CREATE","ZohoCatalyst.tables.bulk.READ","ZohoCatalyst.folders.ALL","ZohoCatalyst.files.CREATE","ZohoCatalyst.files.READ","ZohoCatalyst.files.DELETE","ZohoCatalyst.functions.ALL","ZohoCatalyst.functions.EXECUTE","ZohoCatalyst.eventlistners.ALL","ZohoCatalyst.eventlisteners.produce","ZohoCatalyst.security.rules.Read","ZohoCatalyst.security.rules.Update","ZohoCatalyst.notifications.mobile","ZohoCatalyst.notifications.web","ZohoCatalyst.search.READ","ZohoCatalyst.mlkit.READ","QuickML.deployment.READ","ZohoCatalyst.pdfshot.execute","ZohoCatalyst.grid.READ","ZohoCatalyst.grid.terminate","ZohoCatalyst.circuits.execution.DELETE","ZohoCatalyst.circuits.execution.READ","ZohoCatalyst.circuits.execute","ZohoCatalyst.appsail.Read","ZohoCatalyst.jobpool.READ","ZohoCatalyst.job.ALL","ZohoCatalyst.nosql.READ","ZohoCatalyst.nosql.rows.ALL"]
+[debug] [2026-07-23T07:15:14.307Z] : >>>> HTTP REQUEST : GET https://api.catalyst.zoho.in/baas/v1/project/46647000000013048 
 
-[debug] [2026-07-11T16:00:16.232Z] : <<<< HTTP RESPONSE : 200
-Response Headers: {"server":"ZGS","date":"Sat, 11 Jul 2026 16:00:15 GMT","content-type":"application/vnd.catalyst.v2+json","transfer-encoding":"chunked","connection":"keep-alive","x-content-type-options":"nosniff","cache-control":"private,no-cache,no-store,max-age=0,must-revalidate","pragma":"no-cache","expires":"Thu, 01 Jan 1970 00:00:00 GMT","x-frame-options":"DENY","strict-transport-security":"max-age=64072000; includeSubDomains; preload"}
+[debug] [2026-07-23T07:15:14.730Z] : <<<< HTTP RESPONSE : 200
+Response Headers: {"server":"ZGS","date":"Thu, 23 Jul 2026 07:15:14 GMT","content-type":"application/vnd.catalyst.v2+json","transfer-encoding":"chunked","connection":"keep-alive","x-content-type-options":"nosniff","cache-control":"private,no-cache,no-store,max-age=0,must-revalidate","pragma":"no-cache","expires":"Thu, 01 Jan 1970 00:00:00 GMT","x-frame-options":"DENY","strict-transport-security":"max-age=64072000; includeSubDomains; preload"}
 
-[debug] [2026-07-11T16:00:16.238Z] : >>>> HTTP REQUEST : GET https://api.catalyst.zoho.in/baas/v1/project/46647000000013048/environment 
+[debug] [2026-07-23T07:15:14.733Z] : >>>> HTTP REQUEST : GET https://api.catalyst.zoho.in/baas/v1/project/46647000000013048/environment 
 
-[debug] [2026-07-11T16:00:16.371Z] : <<<< HTTP RESPONSE : 200
-Response Headers: {"server":"ZGS","date":"Sat, 11 Jul 2026 16:00:16 GMT","content-type":"application/vnd.catalyst.v2+json","transfer-encoding":"chunked","connection":"keep-alive","x-content-type-options":"nosniff","cache-control":"private,no-cache,no-store,max-age=0,must-revalidate","pragma":"no-cache","expires":"Thu, 01 Jan 1970 00:00:00 GMT","x-frame-options":"DENY","strict-transport-security":"max-age=64072000; includeSubDomains; preload"}
+[debug] [2026-07-23T07:15:14.830Z] : <<<< HTTP RESPONSE : 200
+Response Headers: {"server":"ZGS","date":"Thu, 23 Jul 2026 07:15:14 GMT","content-type":"application/vnd.catalyst.v2+json","transfer-encoding":"chunked","connection":"keep-alive","x-content-type-options":"nosniff","cache-control":"private,no-cache,no-store,max-age=0,must-revalidate","pragma":"no-cache","expires":"Thu, 01 Jan 1970 00:00:00 GMT","x-frame-options":"DENY","strict-transport-security":"max-age=64072000; includeSubDomains; preload"}
 
-[debug] [2026-07-11T16:00:16.517Z] : Build folder already exists, starting cleanup
-[debug] [2026-07-11T16:00:16.553Z] : >>>> HTTP REQUEST : GET https://api.catalyst.zoho.in/baas/get-details 
+[debug] [2026-07-23T07:15:14.934Z] : Build folder already exists, starting cleanup
+[debug] [2026-07-23T07:15:15.154Z] : >>>> HTTP REQUEST : GET https://api.catalyst.zoho.in/baas/get-details 
 Query params: {"feature_name":"runtime"}
 
-[debug] [2026-07-11T16:00:16.692Z] : <<<< HTTP RESPONSE : 200
-Response Headers: {"server":"ZGS","date":"Sat, 11 Jul 2026 16:00:16 GMT","content-type":"application/vnd.catalyst.v2+json","transfer-encoding":"chunked","connection":"keep-alive","x-content-type-options":"nosniff","cache-control":"private,no-cache,no-store,max-age=0,must-revalidate","pragma":"no-cache","expires":"Thu, 01 Jan 1970 00:00:00 GMT","x-frame-options":"DENY","strict-transport-security":"max-age=64072000; includeSubDomains; preload"}
+[debug] [2026-07-23T07:15:15.212Z] : <<<< HTTP RESPONSE : 200
+Response Headers: {"server":"ZGS","date":"Thu, 23 Jul 2026 07:15:15 GMT","content-type":"application/vnd.catalyst.v2+json","transfer-encoding":"chunked","connection":"keep-alive","x-content-type-options":"nosniff","cache-control":"private,no-cache,no-store,max-age=0,must-revalidate","pragma":"no-cache","expires":"Thu, 01 Jan 1970 00:00:00 GMT","x-frame-options":"DENY","strict-transport-security":"max-age=64072000; includeSubDomains; preload"}
 
-[debug] [2026-07-11T16:00:16.698Z] : >>>> HTTP REQUEST : GET https://api.catalyst.zoho.in/baas/v1/project/46647000000013048/function 
+[debug] [2026-07-23T07:15:15.216Z] : >>>> HTTP REQUEST : GET https://api.catalyst.zoho.in/baas/v1/project/46647000000013048/function 
 Query params: {"type":"basicio,event,cron,applogic,integration,browser_logic,job"}
 
-[debug] [2026-07-11T16:00:16.918Z] : <<<< HTTP RESPONSE : 200
-Response Headers: {"server":"ZGS","date":"Sat, 11 Jul 2026 16:00:16 GMT","content-type":"application/vnd.catalyst.v2+json","transfer-encoding":"chunked","connection":"keep-alive","x-content-type-options":"nosniff","cache-control":"private,no-cache,no-store,max-age=0,must-revalidate","pragma":"no-cache","expires":"Thu, 01 Jan 1970 00:00:00 GMT","x-frame-options":"DENY","strict-transport-security":"max-age=64072000; includeSubDomains; preload"}
+[debug] [2026-07-23T07:15:15.342Z] : <<<< HTTP RESPONSE : 200
+Response Headers: {"server":"ZGS","date":"Thu, 23 Jul 2026 07:15:15 GMT","content-type":"application/vnd.catalyst.v2+json","transfer-encoding":"chunked","connection":"keep-alive","x-content-type-options":"nosniff","cache-control":"private,no-cache,no-store,max-age=0,must-revalidate","pragma":"no-cache","expires":"Thu, 01 Jan 1970 00:00:00 GMT","x-frame-options":"DENY","strict-transport-security":"max-age=64072000; includeSubDomains; preload"}
 
-[debug] [2026-07-11T16:00:16.923Z] : unknown eol undefined hence skipping check
-[debug] [2026-07-11T16:03:08.966Z] : 
-[debug] [2026-07-11T16:03:08.969Z] : ----------------------------------------------------------------------
-[debug] [2026-07-11T16:03:08.969Z] : Command:      C:\Program Files\nodejs\node.exe C:\Users\dhruv\AppData\Roaming\npm\node_modules\zcatalyst-cli\lib\bin\catalyst.js deploy
-[debug] [2026-07-11T16:03:08.970Z] : CLI Version:  1.26.2
-[debug] [2026-07-11T16:03:08.970Z] : Platform:     win32
-[debug] [2026-07-11T16:03:08.970Z] : Node Version: v22.14.0
-[debug] [2026-07-11T16:03:08.970Z] : Time:         Sat Jul 11 2026 21:33:08 GMT+0530 (India Standard Time)
-[debug] [2026-07-11T16:03:08.970Z] : ----------------------------------------------------------------------
-[debug] [2026-07-11T16:03:08.971Z] : 
-[debug] [2026-07-11T16:03:10.397Z] : > authorizing via signed-in user option
-[debug] [2026-07-11T16:03:10.398Z] : > command requires scopes: ["ZohoCatalyst.projects.ALL","ZohoCatalyst.functions.ALL","ZohoCatalyst.webapp.ALL","ZohoCatalyst.appsail.Update"]
-[debug] [2026-07-11T16:03:10.421Z] : >>>> HTTP REQUEST : GET https://api.catalyst.zoho.in/baas/v1/project/46647000000013048 
-
-[debug] [2026-07-11T16:03:10.808Z] : <<<< HTTP RESPONSE : 200
-Response Headers: {"server":"ZGS","date":"Sat, 11 Jul 2026 16:03:10 GMT","content-type":"application/vnd.catalyst.v2+json","transfer-encoding":"chunked","connection":"keep-alive","x-content-type-options":"nosniff","cache-control":"private,no-cache,no-store,max-age=0,must-revalidate","pragma":"no-cache","expires":"Thu, 01 Jan 1970 00:00:00 GMT","x-frame-options":"DENY","strict-transport-security":"max-age=64072000; includeSubDomains; preload"}
-
-[debug] [2026-07-11T16:03:10.814Z] : >>>> HTTP REQUEST : GET https://api.catalyst.zoho.in/baas/v1/project/46647000000013048/environment 
-
-[debug] [2026-07-11T16:03:10.907Z] : <<<< HTTP RESPONSE : 200
-Response Headers: {"server":"ZGS","date":"Sat, 11 Jul 2026 16:03:10 GMT","content-type":"application/vnd.catalyst.v2+json","transfer-encoding":"chunked","connection":"keep-alive","x-content-type-options":"nosniff","cache-control":"private,no-cache,no-store,max-age=0,must-revalidate","pragma":"no-cache","expires":"Thu, 01 Jan 1970 00:00:00 GMT","x-frame-options":"DENY","strict-transport-security":"max-age=64072000; includeSubDomains; preload"}
-
-[debug] [2026-07-11T16:03:10.927Z] : >>>> HTTP REQUEST : GET https://api.catalyst.zoho.in/baas/get-details 
-Query params: {"feature_name":"runtime"}
-
-[debug] [2026-07-11T16:03:11.011Z] : <<<< HTTP RESPONSE : 200
-Response Headers: {"server":"ZGS","date":"Sat, 11 Jul 2026 16:03:10 GMT","content-type":"application/vnd.catalyst.v2+json","transfer-encoding":"chunked","connection":"keep-alive","x-content-type-options":"nosniff","cache-control":"private,no-cache,no-store,max-age=0,must-revalidate","pragma":"no-cache","expires":"Thu, 01 Jan 1970 00:00:00 GMT","x-frame-options":"DENY","strict-transport-security":"max-age=64072000; includeSubDomains; preload"}
-
-[debug] [2026-07-11T16:03:11.016Z] : >>>> HTTP REQUEST : GET https://api.catalyst.zoho.in/baas/v1/project/46647000000013048/function 
-Query params: {"type":"basicio,event,cron,applogic,integration,browser_logic,job"}
-
-[debug] [2026-07-11T16:03:11.120Z] : <<<< HTTP RESPONSE : 200
-Response Headers: {"server":"ZGS","date":"Sat, 11 Jul 2026 16:03:10 GMT","content-type":"application/vnd.catalyst.v2+json","transfer-encoding":"chunked","connection":"keep-alive","x-content-type-options":"nosniff","cache-control":"private,no-cache,no-store,max-age=0,must-revalidate","pragma":"no-cache","expires":"Thu, 01 Jan 1970 00:00:00 GMT","x-frame-options":"DENY","strict-transport-security":"max-age=64072000; includeSubDomains; preload"}
-
-[debug] [2026-07-11T16:03:11.124Z] : unknown eol undefined hence skipping check
+[debug] [2026-07-23T07:15:15.347Z] : unknown eol undefined hence skipping check
+[debug] [2026-07-23T07:15:39.077Z] : ruok response: 200: OK
+[debug] [2026-07-23T07:15:39.184Z] : No API Gateway configuration found. Skipping API Gateway rules
+[info] [2026-07-23T07:15:39.187Z] : 
+[info] [2026-07-23T07:15:39.188Z] :  >>>>>>>>>>>>> Advanced I/O <<<<<<<<<<< 
+[info] [2026-07-23T07:15:39.188Z] : ℹ ksp_functions: http://localhost:3000/server/ksp_functions/
+[info] [2026-07-23T07:15:39.188Z] : 
+[info] [2026-07-23T07:16:25.684Z] : [1784790985683]  "GET"  "/app/challenge01/index.html"
+[info] [2026-07-23T07:16:26.218Z] : [1784790986218]  "GET"  "/app/challenge01/css/style.css"
+[info] [2026-07-23T07:16:26.223Z] : [1784790986222]  "GET"  "/app/challenge01/js/app.js"
+[info] [2026-07-23T07:16:30.186Z] : [1784790990185]  "POST"  "/server/ksp_functions/api/chat"
+[info] [2026-07-23T07:16:32.468Z] : [1784790992468]  "POST"  "/server/ksp_functions/api/tts"
+[info] [2026-07-23T07:16:38.897Z] : [1784790998897]  "GET"  "/favicon.ico"
+[info] [2026-07-23T07:16:42.259Z] : [1784791002258]  "POST"  "/server/ksp_functions/api/chat"
+[info] [2026-07-23T07:16:44.069Z] : [1784791004068]  "POST"  "/server/ksp_functions/api/tts"
+[info] [2026-07-23T07:26:49.348Z] : 
+change of nl2sql.py in ksp_functions detected. Preparing your function, please wait...
+[debug] [2026-07-23T07:26:49.699Z] : Python child exit: 1, null
+[debug] [2026-07-23T07:27:17.614Z] : ruok response: 200: OK
+[info] [2026-07-23T07:27:17.721Z] : ℹ AdvancedIO[ksp_functions]: ready!
+[info] [2026-07-23T07:27:17.724Z] : ℹ AdvancedIO[ksp_functions]: http://localhost:3000/server/ksp_functions/
+[info] [2026-07-23T07:27:18.732Z] : 
+change of nl2sql.py in ksp_functions detected. Preparing your function, please wait...
+[debug] [2026-07-23T07:27:19.087Z] : Python child exit: 1, null
+[debug] [2026-07-23T07:27:44.117Z] : ruok response: 200: OK
+[info] [2026-07-23T07:27:44.221Z] : ℹ AdvancedIO[ksp_functions]: ready!
+[info] [2026-07-23T07:27:44.222Z] : ℹ AdvancedIO[ksp_functions]: http://localhost:3000/server/ksp_functions/
+[info] [2026-07-23T07:30:34.841Z] : 
+change of nl2sql.py in ksp_functions detected. Preparing your function, please wait...
+[debug] [2026-07-23T07:30:35.085Z] : Python child exit: 1, null
+[debug] [2026-07-23T07:30:54.294Z] : ruok response: 200: OK
+[info] [2026-07-23T07:30:54.399Z] : ℹ AdvancedIO[ksp_functions]: ready!
+[info] [2026-07-23T07:30:54.400Z] : ℹ AdvancedIO[ksp_functions]: http://localhost:3000/server/ksp_functions/
+[info] [2026-07-23T07:30:55.400Z] : 
+change of nl2sql.py in ksp_functions detected. Preparing your function, please wait...
+[debug] [2026-07-23T07:30:55.663Z] : Python child exit: 1, null
+[debug] [2026-07-23T07:31:14.406Z] : ruok response: 200: OK
+[info] [2026-07-23T07:31:14.514Z] : ℹ AdvancedIO[ksp_functions]: ready!
+[info] [2026-07-23T07:31:14.514Z] : ℹ AdvancedIO[ksp_functions]: http://localhost:3000/server/ksp_functions/
+[info] [2026-07-23T07:47:58.351Z] : 
+change of __pycache__\nl2sql.cpython-312.pyc in ksp_functions detected. Preparing your function, please wait...
+[debug] [2026-07-23T07:47:58.651Z] : Python child exit: 1, null
+[debug] [2026-07-23T07:48:26.851Z] : ruok response: 200: OK
+[info] [2026-07-23T07:48:26.957Z] : ℹ AdvancedIO[ksp_functions]: ready!
+[info] [2026-07-23T07:48:26.958Z] : ℹ AdvancedIO[ksp_functions]: http://localhost:3000/server/ksp_functions/
+[info] [2026-07-23T07:48:27.963Z] : 
+change of ksp_crime.db in ksp_functions detected. Preparing your function, please wait...
+[debug] [2026-07-23T07:48:28.295Z] : Python child exit: 1, null
+[debug] [2026-07-23T07:48:54.384Z] : ruok response: 200: OK
+[info] [2026-07-23T07:48:54.491Z] : ℹ AdvancedIO[ksp_functions]: ready!
+[info] [2026-07-23T07:48:54.492Z] : ℹ AdvancedIO[ksp_functions]: http://localhost:3000/server/ksp_functions/
+[info] [2026-07-23T07:53:42.320Z] : 
+change of ksp_crime.db in ksp_functions detected. Preparing your function, please wait...
+[debug] [2026-07-23T07:53:42.566Z] : Python child exit: 1, null
+[debug] [2026-07-23T07:54:28.592Z] : ruok response: 200: OK
+[info] [2026-07-23T07:54:28.697Z] : ℹ AdvancedIO[ksp_functions]: ready!
+[info] [2026-07-23T07:54:28.698Z] : ℹ AdvancedIO[ksp_functions]: http://localhost:3000/server/ksp_functions/
+[info] [2026-07-23T07:54:29.704Z] : 
+change of ksp_crime.db in ksp_functions detected. Preparing your function, please wait...
+[debug] [2026-07-23T07:54:30.001Z] : Python child exit: 1, null
+[debug] [2026-07-23T07:54:56.104Z] : ruok response: 200: OK
+[info] [2026-07-23T07:54:56.208Z] : ℹ AdvancedIO[ksp_functions]: ready!
+[info] [2026-07-23T07:54:56.210Z] : ℹ AdvancedIO[ksp_functions]: http://localhost:3000/server/ksp_functions/
+[info] [2026-07-23T07:54:57.219Z] : 
+change of ksp_crime.db in ksp_functions detected. Preparing your function, please wait...
+[debug] [2026-07-23T07:54:57.481Z] : Python child exit: 1, null
+[debug] [2026-07-23T07:55:22.383Z] : ruok response: 200: OK
+[info] [2026-07-23T07:55:22.488Z] : ℹ AdvancedIO[ksp_functions]: ready!
+[info] [2026-07-23T07:55:22.489Z] : ℹ AdvancedIO[ksp_functions]: http://localhost:3000/server/ksp_functions/
+[info] [2026-07-23T07:55:23.498Z] : 
+unlink of ksp_crime.db-journal in ksp_functions detected. Preparing your function, please wait...
+[debug] [2026-07-23T07:55:23.735Z] : Python child exit: 1, null
+[debug] [2026-07-23T07:55:43.004Z] : ruok response: 200: OK
+[info] [2026-07-23T07:55:43.115Z] : ℹ AdvancedIO[ksp_functions]: ready!
+[info] [2026-07-23T07:55:43.115Z] : ℹ AdvancedIO[ksp_functions]: http://localhost:3000/server/ksp_functions/
+[info] [2026-07-23T07:55:44.122Z] : 
+add of ksp_crime.db-journal in ksp_functions detected. Preparing your function, please wait...
+[debug] [2026-07-23T07:55:44.469Z] : Python child exit: 1, null
+[debug] [2026-07-23T07:56:05.233Z] : ruok response: 200: OK
+[info] [2026-07-23T07:56:05.340Z] : ℹ AdvancedIO[ksp_functions]: ready!
+[info] [2026-07-23T07:56:05.341Z] : ℹ AdvancedIO[ksp_functions]: http://localhost:3000/server/ksp_functions/
+[info] [2026-07-23T07:56:06.350Z] : 
+add of ksp_crime.db-journal in ksp_functions detected. Preparing your function, please wait...
+[debug] [2026-07-23T07:56:06.617Z] : Python child exit: 1, null
+[debug] [2026-07-23T07:56:25.848Z] : ruok response: 200: OK
+[info] [2026-07-23T07:56:25.990Z] : ℹ AdvancedIO[ksp_functions]: ready!
+[info] [2026-07-23T07:56:26.022Z] : ℹ AdvancedIO[ksp_functions]: http://localhost:3000/server/ksp_functions/
+[info] [2026-07-23T08:45:15.769Z] : 
+change of main.py in ksp_functions detected. Preparing your function, please wait...
+[debug] [2026-07-23T08:45:16.082Z] : Python child exit: 1, null
+[debug] [2026-07-23T08:45:41.390Z] : ruok response: 200: OK
+[info] [2026-07-23T08:45:41.496Z] : ℹ AdvancedIO[ksp_functions]: ready!
+[info] [2026-07-23T08:45:41.496Z] : ℹ AdvancedIO[ksp_functions]: http://localhost:3000/server/ksp_functions/
+[info] [2026-07-23T08:46:42.195Z] : 
+change of __pycache__\main.cpython-312.pyc in ksp_functions detected. Preparing your function, please wait...
+[debug] [2026-07-23T08:46:42.484Z] : Python child exit: 1, null
+[debug] [2026-07-23T08:47:06.778Z] : ruok response: 200: OK
+[info] [2026-07-23T08:47:06.884Z] : ℹ AdvancedIO[ksp_functions]: ready!
+[info] [2026-07-23T08:47:06.886Z] : ℹ AdvancedIO[ksp_functions]: http://localhost:3000/server/ksp_functions/
+[info] [2026-07-23T08:47:07.893Z] : 
+change of ksp_crime.db in ksp_functions detected. Preparing your function, please wait...
+[debug] [2026-07-23T08:47:08.257Z] : Python child exit: 1, null
+[debug] [2026-07-23T08:47:32.155Z] : ruok response: 200: OK
+[info] [2026-07-23T08:47:32.263Z] : ℹ AdvancedIO[ksp_functions]: ready!
+[info] [2026-07-23T08:47:32.263Z] : ℹ AdvancedIO[ksp_functions]: http://localhost:3000/server/ksp_functions/
+[info] [2026-07-23T08:48:28.868Z] : 
+change of catalyst-config.json in ksp_functions detected. Preparing your function, please wait...
+[debug] [2026-07-23T08:48:29.153Z] : Python child exit: 1, null
+[debug] [2026-07-23T08:48:52.156Z] : ruok response: 200: OK
+[info] [2026-07-23T08:48:52.261Z] : ℹ AdvancedIO[ksp_functions]: ready!
+[info] [2026-07-23T08:48:52.262Z] : ℹ AdvancedIO[ksp_functions]: http://localhost:3000/server/ksp_functions/

@@ -1,0 +1,9 @@
+{
+  "deployment": {
+    "name": "ksp-frontend",
+    "type": "slate",
+    "stack": "html",
+    "build_command": "",
+    "output_directory": "."
+  }
+}

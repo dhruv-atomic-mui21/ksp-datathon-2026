@@ -1,311 +1,21 @@
-// KSP Client-Side Controller (Challenge 01 Chatbot & Challenge 02 Dashboard)
-
-// 1. Dynamic API Base URL resolver for Zoho Catalyst environments (local and production)
-// Target Production Function: https://ksp-datathon-2026-60077655375.catalystserverless.in/server/ksp_functions
-const _ENC_API_TARGET = "aHR0cHM6Ly9rc3AtZGF0YXRob24tMjAyNi02MDA3NzY1NTM3NS5jYXRhbHlzdHNlcnZlcmxlc3MuaW4vc2VydmVyL2tzcF9mdW5jdGlvbnM=";
+// KSP Client-Side Controller (Challenge 02 Analytics Dashboard)
 
 function resolveApiBase() {
     const hostname = window.location.hostname;
     if (hostname === "localhost" || hostname === "127.0.0.1") {
         return "http://localhost:3000/server/ksp_functions";
-    } else if (hostname.includes("catalystserverless.in") && !hostname.includes("onslate.in")) {
-        return "/server/ksp_functions";
-    } else {
-        // Slate deployment (*.onslate.in or custom mapped domain)
-        try {
-            let decoded = window.atob(_ENC_API_TARGET);
-            return decoded.replace(/\/$/, '');
-        } catch (e) {
-            return "https://ksp-datathon-2026-60077655375.catalystserverless.in/server/ksp_functions";
-        }
     }
+    return "/server/ksp_functions";
 }
 
 let API_BASE = resolveApiBase();
 console.log("Resolved API Base URL:", API_BASE);
 
 // State Store
-let conversationHistory = [];
 let leafletMap = null;
 let leafletMarkersLayer = null;
 let leafletHotspotsLayer = null;
 let visNetworkInstance = null;
-
-// ==========================================
-// CHALLENGE 01: Intelligent Conversational AI
-// ==========================================
-
-function sendQuery() {
-    const chatInput = document.getElementById("chatInput");
-    const queryText = chatInput.value.trim();
-    if (!queryText) return;
-
-    // Clear input
-    chatInput.value = "";
-    
-    // Disable inputs
-    chatInput.disabled = true;
-    
-    // Add user bubble
-    appendMessageBubble("user", queryText);
-
-    // Get Simulated User Role
-    const userRole = localStorage.getItem("ksp_user_role") || "investigator";
-    const userEmail = localStorage.getItem("ksp_user_email") || "io.patil@ksp.gov.in";
-
-    // Call API
-    fetch(`${API_BASE}/api/chat`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            query: queryText,
-            history: conversationHistory,
-            user: { email: userEmail, role: userRole }
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-        // Update history
-        conversationHistory = data.history;
-
-        // Append assistant bubble
-        appendMessageBubble("assistant", data.answer, data.sql, data.results);
-
-        // Voice Output (Speech Synthesis) if checked
-        const ttsToggle = document.getElementById("ttsToggle");
-        if (ttsToggle && ttsToggle.checked) {
-            speakResponse(data.answer);
-        }
-    })
-    .catch(err => {
-        console.error("Chat error:", err);
-        appendMessageBubble("assistant", "Sorry, a connection error occurred with the Catalyst backend function.");
-    })
-    .finally(() => {
-        chatInput.disabled = false;
-        chatInput.focus();
-    });
-}
-
-function appendMessageBubble(role, text, sql = null, results = null) {
-    const chatMessages = document.getElementById("chatMessages");
-    if (!chatMessages) return;
-
-    const bubble = document.createElement("div");
-    bubble.className = `message-bubble ${role === 'user' ? 'message-user' : 'message-assistant'}`;
-    
-    // Convert newlines to breaks
-    bubble.innerHTML = text.replace(/\n/g, "<br>");
-
-    // Add metadata for assistant (SQL explainability)
-    if (role === 'assistant' && sql) {
-        const metaDiv = document.createElement("div");
-        metaDiv.className = "message-meta";
-        
-        const explainBtn = document.createElement("button");
-        explainBtn.className = "btn-explain";
-        explainBtn.innerText = "Explain Query (Transparency)";
-        
-        // Escape characters for injection
-        const escapedSql = sql.replace(/'/g, "\\'").replace(/"/g, '\\"');
-        const escapedResults = JSON.stringify(results).replace(/'/g, "\\'").replace(/"/g, '\\"');
-        
-        explainBtn.onclick = () => openExplainDrawer(escapedSql, escapedResults);
-        
-        metaDiv.appendChild(explainBtn);
-        bubble.appendChild(metaDiv);
-    }
-
-    chatMessages.appendChild(bubble);
-    // Scroll to bottom
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-
-// Voice Output via Backend (Sarvam AI TTS)
-async function speakResponse(text) {
-    const cleanText = text.replace(/[*#]/g, ""); // remove markdown markers
-    
-    // Check language
-    const langSelect = document.getElementById("langSelect");
-    let lang = "en-IN";
-    if (langSelect && langSelect.value.startsWith("kn")) {
-        lang = "kn-IN"; // Kannada voice
-    }
-    
-    try {
-        const response = await fetch(`${API_BASE}/api/tts`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text: cleanText, language: lang })
-        });
-        const data = await response.json();
-        
-        if (data.audio_base64) {
-            const audio = new Audio("data:audio/wav;base64," + data.audio_base64);
-            audio.play();
-        } else {
-            console.error("Sarvam TTS Error:", data.error);
-            fallbackTTS(cleanText, lang);
-        }
-    } catch (err) {
-        console.error("TTS Fetch Error:", err);
-        fallbackTTS(cleanText, lang);
-    }
-}
-
-// Fallback to browser's native TTS if Sarvam fails or is unconfigured
-function fallbackTTS(text, lang) {
-    if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel(); 
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = lang;
-        window.speechSynthesis.speak(utterance);
-    }
-}
-
-// Voice Input (Web Speech API)
-let recognition = null;
-function toggleSpeech() {
-    const micBtn = document.getElementById("micBtn");
-    if (!micBtn) return;
-
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-        alert("Web Speech Input is not supported by this browser.");
-        return;
-    }
-
-    if (recognition) {
-        recognition.stop();
-        recognition = null;
-        micBtn.classList.remove("recording");
-        return;
-    }
-
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    recognition = new SpeechRecognition();
-    
-    // Set language based on dropdown
-    const langSelect = document.getElementById("langSelect");
-    recognition.lang = langSelect ? langSelect.value : "en-US";
-    recognition.interimResults = false;
-    
-    recognition.onstart = function() {
-        micBtn.classList.add("recording");
-    };
-    
-    recognition.onresult = function(event) {
-        const transcript = event.results[0][0].transcript;
-        document.getElementById("chatInput").value = transcript;
-        sendQuery(); // auto-submit query
-    };
-    
-    recognition.onerror = function(event) {
-        console.error("Speech recognition error:", event.error);
-        micBtn.classList.remove("recording");
-    };
-    
-    recognition.onend = function() {
-        micBtn.classList.remove("recording");
-        recognition = null;
-    };
-    
-    recognition.start();
-}
-
-// Export Chat History to PDF
-function exportConversationPDF() {
-    if (conversationHistory.length === 0) {
-        alert("Conversation history is empty.");
-        return;
-    }
-    
-    fetch(`${API_BASE}/api/export-pdf`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ history: conversationHistory })
-    })
-    .then(res => res.blob())
-    .then(blob => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "ksp_investigation_report.pdf";
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-    })
-    .catch(err => {
-        console.error("PDF export error:", err);
-        alert("Failed to export PDF report from Catalyst Functions.");
-    });
-}
-
-function clearConversation() {
-    conversationHistory = [];
-    const chatMessages = document.getElementById("chatMessages");
-    if (chatMessages) {
-        chatMessages.innerHTML = `
-            <div class="message-bubble message-assistant">
-                Chat history cleared. How can I assist you with your investigation now?
-            </div>
-        `;
-    }
-}
-
-// Explainability Slide-out Drawer
-function openExplainDrawer(sql, resultsJson) {
-    const drawer = document.getElementById("explainDrawer");
-    const drawerSql = document.getElementById("drawerSql");
-    const tableHead = document.getElementById("drawerTableHead");
-    const tableBody = document.getElementById("drawerTableBody");
-    
-    if (!drawer || !drawerSql) return;
-
-    drawerSql.innerText = sql;
-    
-    const results = JSON.parse(resultsJson);
-    
-    // Build table
-    tableHead.innerHTML = "";
-    tableBody.innerHTML = "";
-    
-    if (results && results.length > 0) {
-        // Headers
-        const headers = Object.keys(results[0]);
-        headers.forEach(h => {
-            const th = document.createElement("th");
-            th.innerText = h;
-            tableHead.appendChild(th);
-        });
-        
-        // Rows
-        results.forEach(row => {
-            const tr = document.createElement("tr");
-            headers.forEach(h => {
-                const td = document.createElement("td");
-                td.innerText = row[h] !== null ? row[h] : "NULL";
-                tr.appendChild(td);
-            });
-            tableBody.appendChild(tr);
-        });
-    } else {
-        tableHead.innerHTML = "<th>Columns</th>";
-        tableBody.innerHTML = "<tr><td>No records returned or query returned empty.</td></tr>";
-    }
-
-    drawer.classList.add("open");
-}
-
-function closeDrawer() {
-    const drawer = document.getElementById("explainDrawer");
-    if (drawer) {
-        drawer.classList.remove("open");
-    }
-}
 
 // ==========================================
 // CHALLENGE 02: Analytics & Dashboard
@@ -333,8 +43,18 @@ function loadGeospatialData() {
     const url = `${API_BASE}/api/geospatial?district=${encodeURIComponent(dist)}&category=${encodeURIComponent(cat)}`;
     
     fetch(url)
-    .then(res => res.json())
+    .then(res => {
+        if (res.status === 429) {
+            throw new Error("Rate limit exceeded. Please wait a minute.");
+        }
+        return res.json();
+    })
     .then(data => {
+        if (data.error) {
+            console.error("Geospatial error:", data.error);
+            return;
+        }
+
         // 1. Initialize Map if not present
         if (!leafletMap) {
             leafletMap = L.map('map').setView([12.9716, 77.5946], 8);
@@ -430,8 +150,17 @@ function loadNetworkData() {
     }
     
     fetch(url)
-    .then(res => res.json())
+    .then(res => {
+        if (res.status === 429) {
+            throw new Error("Rate limit exceeded. Please wait a minute.");
+        }
+        return res.json();
+    })
     .then(data => {
+        if (data.error) {
+            console.error("Network error:", data.error);
+            return;
+        }
         const container = document.getElementById("networkContainer");
         if (!container) return;
 
@@ -458,6 +187,12 @@ function loadNetworkData() {
             };
         });
 
+        // Destroy existing network instance to prevent memory leaks and UI lag
+        if (visNetworkInstance) {
+            visNetworkInstance.destroy();
+            visNetworkInstance = null;
+        }
+
         // Initialize Vis.js network instance
         const graphData = {
             nodes: new vis.DataSet(nodes),
@@ -468,9 +203,9 @@ function loadNetworkData() {
             physics: {
                 stabilization: {
                     enabled: true,
-                    iterations: 150
+                    iterations: 50
                 },
-                barnesHut: { gravitationalConstant: -1200, centralGravity: 0.15, springLength: 95 }
+                barnesHut: { gravitationalConstant: -1000, centralGravity: 0.2, springLength: 85 }
             },
             interaction: { hover: true, tooltipDelay: 100 }
         };
@@ -479,6 +214,9 @@ function loadNetworkData() {
 
         // Turn off physics simulation after stabilization to eliminate drag lag
         visNetworkInstance.on("stabilizationIterationsDone", function () {
+            visNetworkInstance.setOptions({ physics: false });
+        });
+        visNetworkInstance.once("stabilized", function () {
             visNetworkInstance.setOptions({ physics: false });
         });
 
@@ -490,8 +228,17 @@ function loadNetworkData() {
 
 function loadRepeatOffendersList() {
     fetch(`${API_BASE}/api/repeat-offenders`)
-    .then(res => res.json())
+    .then(res => {
+        if (res.status === 429) {
+            throw new Error("Rate limit exceeded. Please wait a minute.");
+        }
+        return res.json();
+    })
     .then(data => {
+        if (data.error) {
+            console.error("Repeat offenders error:", data.error);
+            return;
+        }
         const container = document.getElementById("gangsListContainer");
         if (!container) return;
 
@@ -530,8 +277,17 @@ function resetNetworkFilters() {
 function loadPredictiveData() {
     // 1. Get Risk Ratings (Random Forest + SHAP calculations)
     fetch(`${API_BASE}/api/predictive`)
-    .then(res => res.json())
+    .then(res => {
+        if (res.status === 429) {
+            throw new Error("Rate limit exceeded. Please wait a minute.");
+        }
+        return res.json();
+    })
     .then(data => {
+        if (data.error) {
+            console.error("Predictive risk error:", data.error);
+            return;
+        }
         const grid = document.getElementById("predictiveRiskGrid");
         if (!grid) return;
 
@@ -564,8 +320,17 @@ function loadPredictiveData() {
 
     // 2. Get Flagged Anomalies (Isolation Forest)
     fetch(`${API_BASE}/api/anomalies`)
-    .then(res => res.json())
+    .then(res => {
+        if (res.status === 429) {
+            throw new Error("Rate limit exceeded. Please wait a minute.");
+        }
+        return res.json();
+    })
     .then(data => {
+        if (data.error) {
+            console.error("Anomalies error:", data.error);
+            return;
+        }
         const tbody = document.getElementById("anomaliesTableBody");
         if (!tbody) return;
 
@@ -627,6 +392,7 @@ function openShapModal(district, explanationsJson) {
     modal.style.display = "flex";
 }
 
+// Close details modal
 function closeShapModal() {
     const modal = document.getElementById("shapModal");
     if (modal) modal.style.display = "none";
@@ -635,8 +401,17 @@ function closeShapModal() {
 // Tab 4: Sociological Insights
 function loadSociologicalData() {
     fetch(`${API_BASE}/api/sociological`)
-    .then(res => res.json())
+    .then(res => {
+        if (res.status === 429) {
+            throw new Error("Rate limit exceeded. Please wait a minute.");
+        }
+        return res.json();
+    })
     .then(data => {
+        if (data.error) {
+            console.error("Sociological error:", data.error);
+            return;
+        }
         // Render Age Demographics
         const ageContainer = document.getElementById("socioAgeContainer");
         if (ageContainer) {
@@ -702,8 +477,18 @@ function loadAuditData() {
     logsPanel.style.display = "block";
 
     fetch(`${API_BASE}/api/audit-logs?role=${role}`)
-    .then(res => res.json())
+    .then(res => {
+        if (res.status === 429) {
+            throw new Error("Rate limit exceeded. Please wait a minute.");
+        }
+        return res.json();
+    })
     .then(data => {
+        if (data.error) {
+            const tbody = document.getElementById("auditTableBody");
+            if (tbody) tbody.innerHTML = `<tr><td colspan='5'>Error: ${data.error}</td></tr>`;
+            return;
+        }
         const tbody = document.getElementById("auditTableBody");
         if (!tbody) return;
 
@@ -722,6 +507,7 @@ function loadAuditData() {
     })
     .catch(err => {
         console.error("Audit log load error:", err);
-        tbody.innerHTML = "<tr><td colspan='5'>Error retrieving audit logs.</td></tr>";
+        const tbody = document.getElementById("auditTableBody");
+        if (tbody) tbody.innerHTML = `<tr><td colspan='5'>Error retrieving audit logs: ${err.message}</td></tr>`;
     });
 }

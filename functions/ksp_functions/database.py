@@ -17,6 +17,22 @@ class DatabaseManager:
         Executes a SELECT query and returns a list of flat dictionaries:
         e.g. [{"CrimeNo": "101", "AccusedName": "Ramesh"}, ...]
         """
+        if sql_query:
+            import re
+            sql_upper = sql_query.upper().strip()
+            
+            # Only allow safe read-only starting tokens
+            allowed_starts = ('SELECT', 'WITH', 'PRAGMA')
+            if not sql_upper.startswith(allowed_starts):
+                raise PermissionError("Security Violation: Only read-only queries (SELECT) are permitted.")
+                
+            # Reject any query containing data modification commands
+            forbidden_keywords = ('INSERT', 'UPDATE', 'DELETE', 'DROP', 'ALTER', 'CREATE', 'REPLACE', 'TRUNCATE', 'GRANT', 'REVOKE')
+            for word in forbidden_keywords:
+                pattern = r'\b' + word + r'\b'
+                if re.search(pattern, sql_upper):
+                    raise PermissionError(f"Security Violation: Unauthorized write operation '{word}' detected.")
+
         if self.db_type == "catalyst":
             return self._execute_zcql(sql_query)
         else:

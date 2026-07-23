@@ -1,0 +1,18 @@
+{
+  "name": "ksp-datathon-2026-frontend",
+  "version": "1.0.0",
+  "description": "Karnataka State Police (KSP) Datathon 2026 — Isolated Frontend for Zoho Catalyst Slate",
+  "main": "index.html",
+  "homepage": "index.html",
+  "scripts": {
+    "start": "npx serve ."
+  },
+  "keywords": [
+    "ksp",
+    "datathon-2026",
+    "zoho-catalyst",
+    "slate"
+  ],
+  "author": "KSP Datathon Team",
+  "license": "MIT"
+}

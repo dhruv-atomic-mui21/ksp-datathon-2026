@@ -1,0 +1,186 @@
+{
+  "challenge_01": {
+    "rule_based_nl2sql_parse": {
+      "iterations": 50,
+      "min_ms": 0.0,
+      "mean_ms": 0.0,
+      "median_ms": 0.0,
+      "p95_ms": 0.0,
+      "p99_ms": 0.03,
+      "max_ms": 0.03,
+      "throughput_rps": 323624.4,
+      "payload_kb": 0.0,
+      "peak_mem_kb": 3.13
+    },
+    "sql_simple_query_exec": {
+      "iterations": 50,
+      "min_ms": 0.75,
+      "mean_ms": 0.94,
+      "median_ms": 0.9,
+      "p95_ms": 1.36,
+      "p99_ms": 1.67,
+      "max_ms": 1.67,
+      "throughput_rps": 1062.0,
+      "payload_kb": 2.25,
+      "peak_mem_kb": 128.37
+    },
+    "sql_complex_join_exec": {
+      "iterations": 50,
+      "min_ms": 0.88,
+      "mean_ms": 1.19,
+      "median_ms": 1.08,
+      "p95_ms": 1.68,
+      "p99_ms": 4.81,
+      "max_ms": 4.81,
+      "throughput_rps": 840.6,
+      "payload_kb": 4.49,
+      "peak_mem_kb": 111.06
+    },
+    "chat_api_english_e2e": {
+      "iterations": 15,
+      "min_ms": 559.13,
+      "mean_ms": 1149.39,
+      "median_ms": 1073.14,
+      "p95_ms": 1982.82,
+      "p99_ms": 1982.82,
+      "max_ms": 1982.82,
+      "throughput_rps": 0.9,
+      "payload_kb": 0.95,
+      "peak_mem_kb": 66.01
+    },
+    "chat_api_kannada_e2e": {
+      "iterations": 15,
+      "min_ms": 615.2,
+      "mean_ms": 1030.84,
+      "median_ms": 950.19,
+      "p95_ms": 1538.16,
+      "p99_ms": 1538.16,
+      "max_ms": 1538.16,
+      "throughput_rps": 1.0,
+      "payload_kb": 4.96,
+      "peak_mem_kb": 91.68
+    },
+    "pdf_export_generation": {
+      "iterations": 30,
+      "min_ms": 3.86,
+      "mean_ms": 5.28,
+      "median_ms": 5.35,
+      "p95_ms": 6.2,
+      "p99_ms": 6.42,
+      "max_ms": 6.42,
+      "throughput_rps": 189.3,
+      "payload_kb": 0.99,
+      "peak_mem_kb": 449.35
+    }
+  },
+  "challenge_02": {
+    "criminal_network_uncached_cold_start": {
+      "iterations": 10,
+      "min_ms": 406.47,
+      "mean_ms": 608.58,
+      "median_ms": 540.41,
+      "p95_ms": 1063.12,
+      "p99_ms": 1063.12,
+      "max_ms": 1063.12,
+      "throughput_rps": 1.6,
+      "payload_kb": 875.47,
+      "peak_mem_kb": 22745.15
+    },
+    "criminal_network_cached": {
+      "iterations": 50,
+      "min_ms": 0.0,
+      "mean_ms": 0.01,
+      "median_ms": 0.01,
+      "p95_ms": 0.02,
+      "p99_ms": 0.03,
+      "max_ms": 0.03,
+      "throughput_rps": 86445.4,
+      "payload_kb": 875.47,
+      "peak_mem_kb": 1096.06
+    },
+    "subnetwork_extraction": {
+      "iterations": 40,
+      "min_ms": 131.17,
+      "mean_ms": 176.17,
+      "median_ms": 174.12,
+      "p95_ms": 232.62,
+      "p99_ms": 238.37,
+      "max_ms": 238.37,
+      "throughput_rps": 5.7,
+      "payload_kb": 1.14,
+      "peak_mem_kb": 5677.25
+    },
+    "repeat_offenders_detection": {
+      "iterations": 30,
+      "min_ms": 10.9,
+      "mean_ms": 15.78,
+      "median_ms": 15.37,
+      "p95_ms": 22.11,
+      "p99_ms": 26.96,
+      "max_ms": 26.96,
+      "throughput_rps": 63.4,
+      "payload_kb": 33.18,
+      "peak_mem_kb": 481.85
+    },
+    "geospatial_dbscan_clustering": {
+      "iterations": 30,
+      "min_ms": 245.43,
+      "mean_ms": 339.0,
+      "median_ms": 329.33,
+      "p95_ms": 522.89,
+      "p99_ms": 723.12,
+      "max_ms": 723.12,
+      "throughput_rps": 2.9,
+      "payload_kb": 38.66,
+      "peak_mem_kb": 735.14
+    },
+    "predictive_risk_shap_scoring": {
+      "iterations": 30,
+      "min_ms": 15.13,
+      "mean_ms": 18.78,
+      "median_ms": 17.97,
+      "p95_ms": 24.82,
+      "p99_ms": 25.36,
+      "max_ms": 25.36,
+      "throughput_rps": 53.2,
+      "payload_kb": 2.75,
+      "peak_mem_kb": 374.96
+    },
+    "isolation_forest_anomaly_detection": {
+      "iterations": 30,
+      "min_ms": 32.9,
+      "mean_ms": 49.2,
+      "median_ms": 48.52,
+      "p95_ms": 64.51,
+      "p99_ms": 65.71,
+      "max_ms": 65.71,
+      "throughput_rps": 20.3,
+      "payload_kb": 1.36,
+      "peak_mem_kb": 1033.46
+    },
+    "sociological_cross_tabulation": {
+      "iterations": 40,
+      "min_ms": 19.39,
+      "mean_ms": 32.66,
+      "median_ms": 35.15,
+      "p95_ms": 39.43,
+      "p99_ms": 40.28,
+      "max_ms": 40.28,
+      "throughput_rps": 30.6,
+      "payload_kb": 13.64,
+      "peak_mem_kb": 425.77
+    },
+    "audit_logs_rbac_auth": {
+      "iterations": 50,
+      "min_ms": 4.15,
+      "mean_ms": 6.99,
+      "median_ms": 7.13,
+      "p95_ms": 7.95,
+      "p99_ms": 8.22,
+      "max_ms": 8.22,
+      "throughput_rps": 143.0,
+      "payload_kb": 16.68,
+      "peak_mem_kb": 218.43
+    }
+  }
+}

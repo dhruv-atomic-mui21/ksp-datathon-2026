@@ -1,3 +1,4 @@
+import sys
 import os
 import re
 import logging
@@ -7,11 +8,36 @@ import urllib.request
 import urllib.error
 from typing import List, Dict, Any, Optional
 
-# ----------------------------------------------------------------------
-# Gemini Configuration
-# ----------------------------------------------------------------------
-# Paste your Google Gemini API Key directly between the quotes below:
-GEMINI_API_KEY = "YOUR_GEMINI_API_KEY_HERE"
+# Force UTF-8 stream encoding on Windows to prevent charmap codec errors
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+if hasattr(sys.stderr, 'reconfigure'):
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+
+def load_env_file():
+    """Loads .env file into os.environ if present and keys not already set."""
+    search_paths = [
+        os.path.join(os.path.dirname(__file__), ".env"),
+        os.path.join(os.path.dirname(__file__), "..", ".env"),
+        os.path.join(os.path.dirname(__file__), "..", "..", ".env"),
+        ".env"
+    ]
+    for path in search_paths:
+        if os.path.exists(path):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith("#") and "=" in line:
+                            key, val = line.split("=", 1)
+                            key = key.strip()
+                            val = val.strip().strip('"').strip("'")
+                            if key not in os.environ:
+                                os.environ[key] = val
+            except Exception:
+                pass
+
+load_env_file()
 
 try:
     import pymysql
@@ -125,34 +151,36 @@ SQL: SELECT CM.CaseMasterID, CM.CrimeNo, CM.CrimeRegisteredDate, A.AccusedName, 
 
 Example 4: Show status of cybercrime cases in Mysuru.
 SQL: SELECT CM.CrimeNo, CSM.CaseStatusName, CM.BriefFacts FROM CaseMaster CM JOIN Unit U ON CM.PoliceStationID = U.UnitID JOIN District D ON U.DistrictID = D.DistrictID JOIN CrimeSubHead CSH ON CM.CrimeMinorHeadID = CSH.CrimeSubHeadID JOIN CaseStatusMaster CSM ON CM.CaseStatusID = CSM.CaseStatusID WHERE CSH.CrimeHeadName = 'Cyber Crime (IT Act)' AND D.DistrictName = 'Mysuru';
-"""
 
-TRANSLATE_TO_ENG_PROMPT = "You are a bilingual English-Kannada translator for a police application. Translate the following Kannada query into simple English. Output ONLY the English translation, no other text:\n"
-TRANSLATE_TO_KAN_PROMPT = "You are a bilingual English-Kannada translator for a police application. Translate the following English response into Kannada. Output ONLY the Kannada translation. Do not translate code, SQL, or numbers. Clearly state the response is translation-assisted at the end:\n"
+Example 5 (Kannada Input): ಬೆಂಗಳೂರಿನಲ್ಲಿ ನಡೆದ ಕೊಲೆ ಪ್ರಕರಣಗಳನ್ನು ಪಟ್ಟಿ ಮಾಡಿ
+SQL: SELECT CM.CaseMasterID, CM.CrimeNo, CM.CaseNo, CM.CrimeRegisteredDate, CM.BriefFacts FROM CaseMaster CM JOIN Unit U ON CM.PoliceStationID = U.UnitID JOIN District D ON U.DistrictID = D.DistrictID JOIN CrimeSubHead CSH ON CM.CrimeMinorHeadID = CSH.CrimeSubHeadID WHERE CSH.CrimeHeadName = 'Murder' AND D.DistrictName = 'Bengaluru City';
+"""
 
 class NL2SQLEngine:
     def __init__(self, db_connection=None):
         self.db = db_connection
         
-        # Load API Key (either from the direct file variable, or fallback to environment variables)
-        self.api_key = GEMINI_API_KEY
-        if not self.api_key or self.api_key == "YOUR_GEMINI_API_KEY_HERE":
-            self.api_key = os.environ.get("GEMINI_API_KEY")
+        # Priority: Environment variables (os.environ or loaded from .env/Catalyst config)
+        load_env_file()
+        self.api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
             
         if self.api_key and self.api_key != "YOUR_GEMINI_API_KEY_HERE":
             self.has_llm = True
         else:
             self.has_llm = False
-            logger.warning("GEMINI_API_KEY not configured. Running in rule-based fallback mode.")
+            logger.warning("GEMINI_API_KEY not configured in environment. Running in rule-based fallback mode.")
             
         self.conversation_history = []  # list of {role, text}
 
     def _call_llm(self, prompt: str) -> str:
-        """Makes a direct standard library HTTP request to the Google Gemini developer API."""
+        """Makes a single HTTP request to Google Gemini API using a pinned model to minimize API quota usage."""
         obscured_key = f"{self.api_key[:6]}...{self.api_key[-4:]}" if self.api_key else "None"
-        logger.info(f"Using Gemini API Key: {obscured_key} (length: {len(self.api_key) if self.api_key else 0})")
         
-        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent"
+        # Single pinned target model
+        target_model = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
+        logger.info(f"Executing LLM request using single model '{target_model}' (Key: {obscured_key})")
+        
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{target_model}:generateContent"
         headers = {
             "Content-Type": "application/json",
             "X-goog-api-key": self.api_key
@@ -166,63 +194,40 @@ class NL2SQLEngine:
                 }
             ]
         }
+        
         try:
             data = json.dumps(payload).encode("utf-8")
             req = urllib.request.Request(url, data=data, headers=headers, method="POST")
-            with urllib.request.urlopen(req, timeout=25) as response:
+            with urllib.request.urlopen(req, timeout=3.5) as response:
                 res_data = json.loads(response.read().decode("utf-8"))
-                return res_data["candidates"][0]["content"]["parts"][0]["text"].strip()
+                text = res_data["candidates"][0]["content"]["parts"][0]["text"].strip()
+                logger.info(f"Gemini API call succeeded ({target_model})")
+                return text
+        except urllib.error.HTTPError as e:
+            if e.code == 429:
+                logger.warning(f"Gemini API Quota Exceeded / Rate Limited (429) for model '{target_model}'. Using instant fallback.")
+            else:
+                logger.warning(f"Gemini API model '{target_model}' failed with HTTP {e.code}: {e.reason}")
+            raise e
         except Exception as e:
-            logger.error(f"Gemini API call failed: {str(e)}")
-            if isinstance(e, urllib.error.HTTPError):
-                try:
-                    err_msg = e.read().decode('utf-8')
-                    logger.error(f"HTTP Error details: {err_msg}")
-                except Exception:
-                    pass
+            logger.warning(f"Gemini API model '{target_model}' failed: {str(e)}")
             raise e
 
     def is_kannada(self, text: str) -> bool:
         kannada_pattern = re.compile(r'[\u0C80-\u0CFF]+')
         return bool(kannada_pattern.search(text))
 
-    def translate_kannada_to_english(self, kannada_query: str) -> str:
-        if not self.has_llm:
-            # Simple fallback
-            lowered = kannada_query.lower()
-            if "ಕೊಲೆ" in lowered: return "murder"
-            if "ಕಳ್ಳತನ" in lowered: return "theft"
-            if "ಬೆಂಗಳೂರು" in lowered: return "Bengaluru City"
-            return kannada_query
-        try:
-            response = self._call_llm(TRANSLATE_TO_ENG_PROMPT + kannada_query)
-            return response
-        except Exception as e:
-            logger.error(f"Kannada to English translation error: {str(e)}")
-            return kannada_query
-
-    def translate_english_to_kannada(self, english_text: str) -> str:
-        if not self.has_llm:
-            return english_text + "\n\n(ಕನ್ನಡ ಭಾಷಾಂತರ ಲಭ್ಯವಿಲ್ಲ - GEMINI_API_KEY not set)"
-        try:
-            response = self._call_llm(TRANSLATE_TO_KAN_PROMPT + english_text)
-            return response + "\n\n*(ಕನ್ನಡ ಅನುವಾದ ನೆರವು ಲಭ್ಯವಿದೆ - Translation Assisted)*"
-        except Exception as e:
-            logger.error(f"English to Kannada translation error: {str(e)}")
-            return english_text + "\n\n*(ಅನುವಾದ ದೋಷ - Translation Error)*"
-
     def generate_sql(self, natural_query: str, history: Optional[List[Dict]] = None) -> str:
         """
-        Translates a natural language query into SQL using Gemini or fallback.
+        Translates natural language query (English or Kannada) directly into SQL using single Gemini LLM call.
         """
-        # 1. Check if the input is Kannada, and translate to English
-        is_kan = self.is_kannada(natural_query)
-        english_query = natural_query
-        if is_kan:
-            english_query = self.translate_kannada_to_english(natural_query)
-            logger.info(f"Translated Kannada query: '{natural_query}' -> '{english_query}'")
+        # 0. Check for greetings or small talk
+        q_clean = natural_query.strip().lower().replace(".", "").replace("!", "")
+        greetings = ["hi", "hello", "hey", "namaste", "good morning", "good afternoon", "hi there", "hello there"]
+        if q_clean in greetings:
+            return ""
 
-        # 2. Build history context
+        # 1. Build history context
         history_context = ""
         if history:
             history_context = "\nConversation context:\n"
@@ -233,20 +238,20 @@ class NL2SQLEngine:
                     sql_info = f" [Executed SQL: {turn.get('sql')}]" if turn.get('sql') else ""
                     history_context += f"Assistant: {turn['text']}{sql_info}\n"
 
-        # 3. Generate SQL
+        # 2. Generate SQL directly from user's natural query (multilingual support built-in)
         sql = None
         if self.has_llm:
-            prompt = f"{SCHEMA_CONTEXT}\n{FEW_SHOT_EXAMPLES}\n{history_context}\nTranslate this natural query into SQL: {english_query}\nSQL:"
+            prompt = f"{SCHEMA_CONTEXT}\n{FEW_SHOT_EXAMPLES}\n{history_context}\nTranslate this natural query (English or Kannada) directly into SQL: {natural_query}\nSQL:"
             try:
                 response = self._call_llm(prompt)
                 sql = response
             except Exception as e:
-                logger.error(f"Gemini SQL generation failed: {str(e)}")
-                sql = self._generate_sql_fallback(english_query)
+                logger.warning(f"Gemini SQL generation fallback triggered: {str(e)}")
+                sql = self._generate_sql_fallback(natural_query)
         else:
-            sql = self._generate_sql_fallback(english_query)
+            sql = self._generate_sql_fallback(natural_query)
 
-        # 4. Clean SQL
+        # 3. Clean SQL
         sql = self.clean_sql_query(sql)
         return sql
 
@@ -281,6 +286,8 @@ class NL2SQLEngine:
 
     def execute_sql(self, sql: str) -> List[Dict[str, Any]]:
         """Execute the SQL and return results as list of dicts."""
+        if not sql:
+            return []
         try:
             return self.db.execute(sql)
         except Exception as e:
@@ -289,31 +296,42 @@ class NL2SQLEngine:
 
     def generate_explanation(self, user_query: str, sql_query: str, results: List[Dict], is_kannada: bool = False) -> str:
         """
-        Ask Gemini to explain the output based on the user query and SQL.
-        If no API key, return a programmatic summary.
+        Synthesizes a natural language RAG answer based on retrieved database rows.
+        Falls back to a smart programmatic summary if LLM call fails.
         """
-        if not self.has_llm:
+        q_clean = user_query.strip().lower().replace(".", "").replace("!", "")
+        greetings = ["hi", "hello", "hey", "namaste", "good morning", "good afternoon", "hi there", "hello there"]
+        is_greeting = q_clean in greetings
+
+        # Helper for natural language fallback if LLM is down
+        def _build_programmatic_fallback():
+            if is_greeting:
+                return "Hello! I am your intelligent conversational assistant for the Karnataka State Police crime database. How can I assist you with your investigation today?"
             if not results:
-                explanation = "No matching records were found in the crime database for your query."
-                if is_kannada:
-                    return "ನಿಮ್ಮ ಪ್ರಶ್ನೆಗೆ ಅಪರಾಧ ಡೇಟಾಬೇಸ್‌ನಲ್ಲಿ ಯಾವುದೇ ಹೊಂದಾಣಿಕೆಯ ದಾಖಲೆಗಳು ಕಂಡುಬಂದಿಲ್ಲ."
-                return explanation
+                return "No matching records were found in the Karnataka State Police crime database for your query. Try refining your search parameters or checking case numbers."
             first = results[0]
-            if "CrimeNo" in first:
-                explanation = f"Found {len(results)} matching cases. Most recent: Crime No. {first.get('CrimeNo')} registered on {first.get('CrimeRegisteredDate') or 'N/A'}. Brief facts: {first.get('BriefFacts', 'No facts')}."
+            count_key = next((k for k in first if 'count' in k.lower() or 'total' in k.lower()), None)
+            if count_key:
+                val = first[count_key]
+                return f"Based on current KSP database records, a total of {val} matching records were found for your query."
+            elif "CrimeNo" in first or "CaseMasterID" in first:
+                recent_crime = first.get("CrimeNo") or first.get("CaseMasterID")
+                date = first.get("CrimeRegisteredDate") or "N/A"
+                facts = first.get("BriefFacts") or "Details available in CaseMaster."
+                return f"Retrieved {len(results)} matching crime cases. Most recent record: Crime No. {recent_crime} registered on {date}. Key details: {facts}"
             elif "AccusedName" in first:
-                explanation = f"Retrieved {len(results)} accused records. Detail: {first.get('AccusedName')}, Phone: {first.get('PhoneNo', 'N/A')}."
+                name = first.get("AccusedName")
+                phone = first.get("PhoneNo") or "N/A"
+                return f"Retrieved {len(results)} accused records matching your query. Subject: {name} (Contact: {phone}). Check Link Analysis for associated network connections."
             else:
-                keys = list(first.keys())[:3]
-                vals = [f"{k}: {first[k]}" for k in keys]
-                explanation = f"Retrieved {len(results)} records. Sample: {', '.join(vals)}."
-            if is_kannada:
-                return self.translate_english_to_kannada(explanation) if self.has_llm else explanation
-            return explanation
+                sample_pairs = [f"{k}: {first[k]}" for k in list(first.keys())[:3]]
+                return f"Retrieved {len(results)} matching records from the database. Summary: {', '.join(sample_pairs)}."
+
+        if not self.has_llm:
+            return _build_programmatic_fallback()
 
         try:
-            q_clean = user_query.strip().lower().replace(".", "").replace("!", "")
-            if q_clean in ["hi", "hello", "hey", "namaste", "good morning", "good afternoon", "hi there", "hello there"]:
+            if is_greeting:
                 prompt = (
                     "You are 'KSP Investigation AI', an intelligent conversational assistant for Karnataka State Police. "
                     "The user sent a greeting. Respond with a warm, professional welcome. Tell them you can help query the crime database, "
@@ -321,26 +339,23 @@ class NL2SQLEngine:
                 )
             else:
                 prompt = (
-                    f"You are a specialized AI assistant for Karnataka State Police. Analyze the following database search results and provide "
-                    f"a professional, clear summary back to the police officer.\n\n"
+                    f"You are 'KSP Investigation AI', a senior law enforcement intelligence officer assistant for Karnataka State Police. "
+                    f"Synthesize a clear, direct natural language answer for the investigating police officer based strictly on the retrieved database resources below.\n\n"
                     f"Police Officer's Question: '{user_query}'\n"
                     f"Executed SQL Database Query: '{sql_query}'\n"
-                    f"Database Results (up to 10 rows): {json.dumps(results[:10], default=str, indent=2)}\n\n"
+                    f"Retrieved Database Results (up to 15 records): {json.dumps(results[:15], default=str, indent=2)}\n\n"
                     f"Instructions:\n"
-                    f"1. Direct Answer: Answer the officer's question directly based on the database results.\n"
-                    f"2. Detail & Insights: Include key details such as Crime Numbers, accused names, registered dates, and brief facts.\n"
-                    f"3. Actionable Suggestion: Suggest a next logical step (e.g., check phone numbers/bank accounts in the Link Analysis graph under Challenge 02, or verify accomplices).\n"
-                    f"4. Professional Tone: Maintain a strict, helpful police intelligence officer tone.\n"
-                    f"5. Keep it concise: Output 3-4 sentences total."
+                    f"1. Direct Answer (RAG): Answer the officer's question directly in natural language using the database data. If it's a count/total, state the exact count clearly.\n"
+                    f"2. Specific Details: Synthesize specific details like Crime Numbers, accused names, registered dates, locations, or brief facts from the retrieved records.\n"
+                    f"3. Actionable Intelligence: Provide 1 practical follow-up step (e.g. cross-referencing phone/bank details in Link Analysis, checking Repeat Offenders, or verifying accomplices).\n"
+                    f"4. Tone: Professional, authoritative law enforcement assistant tone.\n"
+                    f"5. Length: Keep response to 2 to 4 concise paragraphs or bullet points."
                 )
             response = self._call_llm(prompt)
-            explanation_eng = response
-            if is_kannada:
-                return self.translate_english_to_kannada(explanation_eng)
-            return explanation_eng
+            return response
         except Exception as e:
-            logger.error(f"Gemini explanation generation failed: {str(e)}")
-            return f"Retrieved {len(results)} records matching your query."
+            logger.warning(f"Gemini LLM call failed or rate limited (429): {str(e)}")
+            return _build_programmatic_fallback()
 
     def run(self):
         """Interactive REPL for the agent."""

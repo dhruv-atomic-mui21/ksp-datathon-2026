@@ -1,0 +1,6 @@
+{
+  "name": "ksp-frontend",
+  "framework": "html",
+  "build_command": "",
+  "output_directory": "."
+}
